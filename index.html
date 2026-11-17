@@ -1,0 +1,1132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Weekly Report Tracker · Allround Vending</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+:root{
+  --navy:#1f3a5f; --navy-2:#2b4d7a; --bg:#f4f5f7; --card:#fff; --text:#16181d; --muted:#5b6070; --faint:#8a8f9c;
+  --line:#e2e5ea; --good:#1f8a4c; --warn:#c96a00; --bad:#c0392b; --blue:#2a78d6; --soft:#eef3fa;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300; --s7:#6250d6; --s8:#e34948;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.45}
+button,input,select,textarea{font:inherit}
+.topbar{background:var(--navy);color:#fff;position:sticky;top:0;z-index:20;box-shadow:0 1px 0 rgba(0,0,0,.1)}
+.topbar .inner{max-width:1280px;margin:0 auto;padding:0 20px;display:flex;align-items:center;gap:20px;min-height:56px;flex-wrap:wrap}
+.brand{font-weight:700;font-size:16px;white-space:nowrap}
+.brand small{display:block;font-weight:400;font-size:11px;opacity:.75}
+nav{display:flex;gap:4px;flex-wrap:wrap}
+nav button{background:transparent;border:0;color:#cfd9e8;padding:8px 14px;border-radius:8px;cursor:pointer;font-weight:500}
+nav button:hover{background:rgba(255,255,255,.08);color:#fff}
+nav button.active{background:#fff;color:var(--navy)}
+.sync{margin-left:auto;font-size:12px;opacity:.85;white-space:nowrap}
+main{max-width:1280px;margin:0 auto;padding:20px}
+.tab{display:none}.tab.active{display:block}
+h2{font-size:20px;margin:4px 0 14px}
+h3{font-size:15px;margin:0 0 10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:16px}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+@media (max-width:900px){.grid2,.grid3{grid-template-columns:1fr!important}}
+.btn{background:var(--navy);color:#fff;border:0;border-radius:8px;padding:8px 14px;cursor:pointer;font-weight:500;white-space:nowrap}
+.btn:hover{background:var(--navy-2)}
+.btn.ghost{background:#fff;color:var(--navy);border:1px solid #c9d2df}
+.btn.ghost:hover{background:var(--soft)}
+.btn.danger{background:#fff;color:var(--bad);border:1px solid #efc5c0}
+.btn.small{padding:4px 10px;font-size:12.5px}
+.btn:disabled{opacity:.5;cursor:default}
+.seg{display:inline-flex;border:1px solid #c9d2df;border-radius:8px;overflow:hidden;background:#fff}
+.seg button{border:0;background:#fff;padding:7px 14px;cursor:pointer;color:var(--muted)}
+.seg button.active{background:var(--navy);color:#fff}
+select,input[type=text],input[type=number],input[type=date],input[type=email],input[type=password],textarea{border:1px solid #cfd5df;border-radius:8px;padding:7px 10px;background:#fff;color:var(--text)}
+textarea{width:100%;resize:vertical}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);font-weight:500}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px}
+.tile{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.tile .v{font-size:24px;font-weight:700;letter-spacing:-.01em}
+.tile .l{font-size:12px;color:var(--muted)}
+.tile .d{font-size:12px;margin-top:4px;color:var(--muted)}
+.up{color:var(--good)}.down{color:var(--bad)}
+.chartbox{position:relative;height:280px}
+.chartbox.tall{height:320px}
+.sub{color:var(--muted);font-size:12.5px;margin:-6px 0 10px}
+table.t{width:100%;border-collapse:collapse;font-size:13px}
+table.t th{background:var(--navy);color:#fff;text-align:left;font-weight:600;padding:8px 10px;white-space:nowrap}
+table.t td{padding:7px 10px;border-bottom:1px solid var(--line)}
+table.t tr:nth-child(even) td{background:#fafbfc}
+table.t td.n,table.t th.n{text-align:right;font-variant-numeric:tabular-nums}
+table.t tr.total td{font-weight:700;background:#eef1f5}
+.tablewrap{overflow-x:auto}
+.pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;background:#eef1f5;color:var(--muted)}
+.pill.sent{background:#e2f2e8;color:#1f6b3e}.pill.planned{background:#e4eefb;color:#1d4f91}.pill.progress{background:#fdf0dc;color:#8a4b00}
+.pill.good{background:#e2f2e8;color:#1f6b3e}.pill.mid{background:#fdf0dc;color:#8a4b00}.pill.low{background:#fbe5e2;color:#9b2c20}
+.drop{border:2px dashed #b9c4d4;border-radius:12px;padding:34px;text-align:center;background:#fff;cursor:pointer;transition:.15s}
+.drop.over{border-color:var(--blue);background:var(--soft)}
+.drop b{color:var(--navy)}
+.warn{background:#fff6e5;border:1px solid #f3d9a6;color:#7a4a00;border-radius:8px;padding:8px 12px;margin:8px 0;font-size:13px}
+.info{background:var(--soft);border:1px solid #d3e0f1;color:#1d3c66;border-radius:8px;padding:10px 12px;font-size:13px}
+.muted{color:var(--muted)}
+.empty{padding:40px;text-align:center;color:var(--muted)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:6px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+/* modal */
+.modal{position:fixed;inset:0;background:rgba(15,25,40,.45);display:none;z-index:50;overflow:auto;padding:30px 12px}
+.modal.open{display:block}
+.modal .box{background:#fff;max-width:1100px;margin:0 auto;border-radius:14px;padding:20px 22px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+.modal h2{margin-top:0}
+.ed table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:6px}
+.ed th{text-align:left;font-size:12px;color:var(--muted);font-weight:600;padding:4px}
+.ed td{padding:3px 4px}
+.ed td input{width:100%;padding:5px 7px}
+.ed td input[type=number]{text-align:right}
+.ed .sec{border-top:1px solid var(--line);padding-top:14px;margin-top:14px}
+.ed .check{font-size:12.5px;margin:4px 0 0}
+.x{background:none;border:0;color:var(--faint);cursor:pointer;font-size:16px;padding:2px 6px}
+.x:hover{color:var(--bad)}
+/* email */
+.emailgrid{display:grid;grid-template-columns:360px minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:1000px){.emailgrid{grid-template-columns:1fr}}
+.preview{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px;overflow-x:auto}
+.checks label{display:flex;gap:8px;align-items:center;padding:3px 0;font-size:13px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#16181d;color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;z-index:99;opacity:0;transition:.2s;pointer-events:none}
+.toast.show{opacity:1}
+.queue-item{border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin-top:10px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;background:#fff}
+.queue-item .grow{flex:1;min-width:200px}
+</style>
+</head>
+<body>
+<div class="topbar"><div class="inner">
+  <div class="brand">Weekly Report Tracker<small>Allround Vending · Technical &amp; Sales</small></div>
+  <nav id="nav">
+    <button data-tab="dashboard" class="active">Dashboard</button>
+    <button data-tab="weeks">Weeks</button>
+    <button data-tab="upload">Upload</button>
+    <button data-tab="email">Email report</button>
+    <button data-tab="settings">Settings &amp; data</button>
+  </nav>
+  <div class="sync" id="syncStatus">Saved in this browser</div>
+</div></div>
+
+<main>
+<!-- DASHBOARD -->
+<section class="tab active" id="tab-dashboard">
+  <div class="row" style="justify-content:space-between;margin-bottom:14px">
+    <h2 style="margin:0">Dashboard</h2>
+    <div class="row">
+      <div class="seg" id="viewSeg"><button data-v="week" class="active">Weekly</button><button data-v="month">Monthly</button></div>
+      <select id="rangeSel"></select>
+    </div>
+  </div>
+  <div id="dashEmpty" class="card empty" style="display:none">No weeks yet. Go to <b>Upload</b> and add your weekly report PDFs.</div>
+  <div id="dashBody">
+    <div class="tiles" id="tiles"></div>
+    <div class="grid2">
+      <div class="card"><h3>Completed value vs target</h3><div class="sub" id="valSub"></div>
+        <div class="legend"><span><i style="background:var(--s1)"></i>Completed value</span><span><i style="background:#d5dbe4"></i>Target</span></div>
+        <div class="chartbox"><canvas id="cValue"></canvas></div></div>
+      <div class="card"><h3>% of target reached</h3><div class="sub">100% means the target was hit</div>
+        <div class="chartbox"><canvas id="cPct"></canvas></div></div>
+      <div class="card"><h3>Jobs booked vs completed</h3><div class="sub">From the daily breakdown</div>
+        <div class="legend"><span><i style="background:#b8c2d1"></i>Jobs booked</span><span><i style="background:var(--s1)"></i>Completed</span></div>
+        <div class="chartbox"><canvas id="cJobs"></canvas></div></div>
+      <div class="card"><h3>Completion rate</h3><div class="sub">Completed ÷ jobs booked</div>
+        <div class="chartbox"><canvas id="cRate"></canvas></div></div>
+    </div>
+    <div class="card"><h3>Value by technician</h3><div class="sub">Each colour is always the same technician</div>
+      <div class="legend" id="techLegend"></div>
+      <div class="chartbox tall"><canvas id="cTech"></canvas></div></div>
+    <div class="grid2" style="grid-template-columns:minmax(0,3fr) minmax(0,2fr)">
+      <div class="card"><h3>Technician summary</h3><div class="sub" id="techSub"></div><div class="tablewrap" id="techTable"></div></div>
+      <div class="card"><h3>Average value by weekday</h3><div class="sub">Holidays / days with no jobs are left out</div>
+        <div class="chartbox"><canvas id="cWeekday"></canvas></div></div>
+    </div>
+    <div class="card"><h3>Mail campaigns in this period</h3><div class="tablewrap" id="campTable"></div></div>
+    <div class="card"><h3>Data table</h3><div class="sub">The numbers behind the charts above</div><div class="tablewrap" id="periodTable"></div></div>
+  </div>
+</section>
+
+<!-- WEEKS -->
+<section class="tab" id="tab-weeks">
+  <div class="row" style="justify-content:space-between;margin-bottom:14px">
+    <h2 style="margin:0">All weeks</h2>
+    <button class="btn ghost" id="addManual">+ Add a week by hand</button>
+  </div>
+  <div class="card tablewrap" id="weeksTable"></div>
+</section>
+
+<!-- UPLOAD -->
+<section class="tab" id="tab-upload">
+  <h2>Upload weekly reports</h2>
+  <div class="drop" id="drop">
+    <input type="file" id="fileIn" accept="application/pdf" multiple hidden>
+    <div style="font-size:30px">📄</div>
+    <p><b>Drop your weekly report PDFs here</b> or click to choose files</p>
+    <p class="muted" style="margin:0">You can add several at once. I read each PDF, then you check the numbers before saving.</p>
+  </div>
+  <div id="queue"></div>
+</section>
+
+<!-- EMAIL -->
+<section class="tab" id="tab-email">
+  <h2>Email a weekly report</h2>
+  <div class="emailgrid">
+    <div class="card">
+      <label class="f">Week<select id="emWeek"></select></label>
+      <div style="height:10px"></div>
+      <label class="f">To<input type="text" id="emTo" placeholder="name@company.com.au; …"></label>
+      <div style="height:8px"></div>
+      <label class="f">CC<input type="text" id="emCc"></label>
+      <div style="height:8px"></div>
+      <label class="f">Subject<input type="text" id="emSubject"></label>
+      <div style="height:8px"></div>
+      <label class="f">Opening message<textarea id="emIntro" rows="4"></textarea></label>
+      <div style="height:8px"></div>
+      <label class="f">Closing / sign-off<textarea id="emOutro" rows="3"></textarea></label>
+      <div style="height:10px"></div>
+      <div class="f" style="font-size:12px;color:var(--muted);font-weight:500">Sections to include</div>
+      <div class="checks" id="emChecks"></div>
+      <div style="height:12px"></div>
+      <div class="row">
+        <button class="btn" id="emCopy">Copy email</button>
+        <button class="btn ghost" id="emEml">Download for Outlook (.eml)</button>
+        <button class="btn ghost" id="emMailto">Open in mail app</button>
+      </div>
+      <p class="muted" style="font-size:12px;margin:10px 0 0"><b>Copy email</b> → paste into a new Outlook/Gmail message (keeps the tables).<br><b>.eml</b> → opens in Outlook as a ready draft with the chart.<br><b>Open in mail app</b> → plain-text version only.</p>
+    </div>
+    <div>
+      <div class="preview" id="emPreview"></div>
+    </div>
+  </div>
+</section>
+
+<!-- SETTINGS -->
+<section class="tab" id="tab-settings">
+  <h2>Settings &amp; data</h2>
+  <div class="grid2">
+    <div class="card">
+      <h3>Defaults</h3>
+      <div class="grid2" style="gap:10px">
+        <label class="f">Weekly technical target ($)<input type="number" id="sTarget"></label>
+        <label class="f">My weekly sales target ($)<input type="number" id="sSalesTarget"></label>
+        <label class="f">ARV site visits per week<input type="number" id="sVisitTarget"></label>
+        <label class="f">My name (for sign-off)<input type="text" id="sName"></label>
+        <label class="f">Default To<input type="text" id="sTo"></label>
+        <label class="f">Default CC<input type="text" id="sCc"></label>
+      </div>
+      <div style="height:12px"></div>
+      <button class="btn" id="sSave">Save settings</button>
+    </div>
+    <div class="card">
+      <h3>Cloud sync (use from any device)</h3>
+      <p class="muted" style="margin-top:0">Without sync, your data is saved in this browser only. If you deployed the full folder (with the Netlify function), enter the same passcode you set in Netlify as <code>SYNC_KEY</code>. Do this once on each device.</p>
+      <div class="row">
+        <input type="password" id="sKey" placeholder="Sync passcode" style="flex:1;min-width:180px">
+        <button class="btn" id="sKeySave">Connect</button>
+        <button class="btn ghost" id="sKeyOff">Turn off</button>
+      </div>
+      <p id="sKeyMsg" class="muted" style="font-size:12.5px"></p>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Backup</h3>
+    <p class="muted" style="margin-top:0">Download all your weeks as one file, or load a backup (also a quick way to move data to another computer).</p>
+    <div class="row">
+      <button class="btn" id="exportBtn">Download backup (.json)</button>
+      <button class="btn ghost" id="importBtn">Load backup…</button>
+      <input type="file" id="importIn" accept="application/json,.json" hidden>
+      <button class="btn ghost" id="exportCsv">Download weeks as CSV</button>
+      <span style="flex:1"></span>
+      <button class="btn danger" id="resetBtn">Reset to sample weeks 41–46</button>
+      <button class="btn danger" id="clearBtn">Delete everything</button>
+    </div>
+  </div>
+</section>
+</main>
+
+<div class="modal" id="editor"><div class="box ed" id="edBox"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== PDF REPORT PARSER (shared by app + node test) =====
+const MONTHS = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+const DAY_NAMES = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+function monthIdx(s){ if(!s) return -1; return MONTHS.indexOf(String(s).slice(0,3).toLowerCase()); }
+function pad2(n){ return String(n).padStart(2,'0'); }
+function isoDate(d){ return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
+function parseISO(s){ const [y,m,d] = String(s).split('-').map(Number); return new Date(y, m-1, d); }
+function addDays(d, n){ const x = new Date(d); x.setDate(x.getDate()+n); return x; }
+function isoWeek(d){
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const day = t.getUTCDay() || 7; t.setUTCDate(t.getUTCDate() + 4 - day);
+  const y0 = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+  return { year: t.getUTCFullYear(), week: Math.ceil(((t - y0) / 864e5 + 1) / 7) };
+}
+function mondayOfIsoWeek(year, week){
+  const jan4 = new Date(year, 0, 4); const dow = jan4.getDay() || 7;
+  return addDays(jan4, 1 - dow + (week - 1) * 7);
+}
+function weekIdFor(monday){ const w = isoWeek(monday); return w.year + '-W' + pad2(w.week); }
+function num(s){ if(s == null || s === '') return 0; const v = parseFloat(String(s).replace(/[^0-9.\-]/g,'')); return isFinite(v) ? v : 0; }
+function parseShortDate(s){
+  const m = String(s).match(/([A-Za-z]{3})[a-z]*\.?\s+(\d{1,2}),?\s+(\d{4})/);
+  if(!m) return ''; const mi = monthIdx(m[1]); if(mi < 0) return '';
+  return isoDate(new Date(+m[3], mi, +m[2]));
+}
+function clean(s){ return String(s).replace(/[​ ]/g,' ').replace(/\s+/g,' ').trim(); }
+
+function groupLines(items){
+  const sorted = items.filter(i => clean(i.s)).sort((a,b) => a.p-b.p || b.y-a.y || a.x-b.x);
+  const lines = [];
+  for(const it of sorted){
+    const L = lines[lines.length-1];
+    if(L && L.p === it.p && Math.abs(L.y - it.y) <= 3) L.items.push(it);
+    else lines.push({ p: it.p, y: it.y, items: [it] });
+  }
+  for(const L of lines){ L.items.sort((a,b) => a.x-b.x); L.text = clean(L.items.map(i => i.s).join(' ')); }
+  return lines;
+}
+
+// put each item of a row under the nearest header column on its left
+function columnize(header, rows){
+  const cols = header.items.map(i => ({ x: i.x, name: clean(i.s) }));
+  return rows.map(r => {
+    const out = cols.map(() => []);
+    for(const it of r.items){
+      let ci = 0;
+      for(let k = 0; k < cols.length; k++) if(cols[k].x <= it.x + 15) ci = k;
+      out[ci].push(clean(it.s));
+    }
+    return { cells: out.map(a => a.join(' ')), cols: cols.map(c => c.name) };
+  });
+}
+
+function parseCampaigns(ls){
+  const hi = ls.findIndex(l => /Target Sector/i.test(l.text));
+  if(hi < 0) return [];
+  const H = ls[hi].items;
+  const colX = k => { const it = H.find(i => clean(i.s).toLowerCase().startsWith(k)); return it ? it.x : null; };
+  const sx = colX('target') ?? 200, dx = colX('scheduled') ?? 320, stx = colX('status') ?? 450;
+  const nameMax = sx - 25;
+  const body = ls.filter((l, i) => i !== hi && !/Target Sector|Scheduled date/i.test(l.text));
+  const rows = [], nameLines = [];
+  for(const l of body){
+    const right = l.items.filter(i => i.x >= nameMax), left = l.items.filter(i => i.x < nameMax);
+    if(right.length){
+      const r = { p: l.p, y: l.y, name: [], sector: '', date: '', status: '' };
+      for(const it of right){
+        const s = clean(it.s);
+        if(it.x < dx - 25) r.sector += (r.sector ? ' ' : '') + s;
+        else if(it.x < stx - 40) r.date += (r.date ? ' ' : '') + s;
+        else r.status += (r.status ? ' ' : '') + s;
+      }
+      if(left.length) nameLines.push({ p: l.p, y: l.y, text: clean(left.map(i => i.s).join(' ')) });
+      rows.push(r);
+    } else nameLines.push({ p: l.p, y: l.y, text: l.text });
+  }
+  for(const nl of nameLines){
+    let best = null, bd = 1e9;
+    for(const r of rows){ if(r.p !== nl.p) continue; const d = Math.abs(r.y - nl.y); if(d < bd){ bd = d; best = r; } }
+    if(best && bd < 40) best.name.push(nl);
+  }
+  return rows.map(r => ({
+    name: r.name.sort((a,b) => b.y-a.y).map(n => n.text).join(' ').trim(),
+    sector: r.sector, date: parseShortDate(r.date) || r.date, status: r.status
+  }));
+}
+
+function parseReport(items, fileName){
+  const warnings = [];
+  const lines = groupLines(items);
+  const all = lines.map(l => l.text).join('\n');
+  const find = (re, from = 0) => { for(let i = Math.max(0, from); i < lines.length; i++) if(re.test(lines[i].text)) return i; return -1; };
+  const slice = (a, b) => lines.slice(a < 0 ? 0 : a, b < 0 ? lines.length : b);
+
+  // --- week + dates
+  let monday = null, reportedWeek = null;
+  const hm = all.match(/Week\s*(\d+)\s*report:?\s*Monday\s+(\d{1,2})(?:\s+([A-Za-z]+))?\s*[–—-]+\s*Friday\s+(\d{1,2})\s+([A-Za-z]+)(?:\s+(\d{4}))?/i);
+  if(hm){
+    reportedWeek = +hm[1];
+    let year = hm[6] ? +hm[6] : null;
+    if(!year){ const ym = all.match(/[A-Z][a-z]{2} \d{1,2}, (\d{4})/); if(ym) year = +ym[1]; }
+    if(!year){ const fm = String(fileName || '').match(/(20\d\d)/); year = fm ? +fm[1] : new Date().getFullYear(); }
+    const friM = monthIdx(hm[5]); let monM = hm[3] ? monthIdx(hm[3]) : friM;
+    const monD = +hm[2], friD = +hm[4];
+    if(!hm[3] && monD > friD) monM = friM - 1;
+    monday = new Date(year, monM, monD);
+    if(monday.getDay() !== 1){ warnings.push('The start date in the header is not a Monday. Please check the Monday date.'); monday = addDays(monday, 1 - (monday.getDay() || 7)); }
+  } else {
+    const fm = String(fileName || '').match(/week[\s_-]*(\d{1,2})/i);
+    if(fm){ reportedWeek = +fm[1]; monday = mondayOfIsoWeek(new Date().getFullYear(), reportedWeek); }
+    warnings.push("Couldn't read the 'Week N report: Monday … – Friday …' line. Please check the Monday date.");
+  }
+  if(!monday) monday = mondayOfIsoWeek(new Date().getFullYear(), isoWeek(new Date()).week);
+  const iw = isoWeek(monday);
+  if(reportedWeek && reportedWeek !== iw.week) warnings.push(`The report header says Week ${reportedWeek}, but the dates belong to Week ${iw.week}. Saved as Week ${iw.week}.`);
+
+  // --- KPI line
+  let target = 15000, expenses = 0, kpiValue = null;
+  const tm = all.match(/of\s*\$([\d,]+)\s*weekly target/i); if(tm) target = num(tm[1]);
+  const dIdx = find(/^Daily breakdown/i), pIdx = find(/Performance by technician/i);
+  const kpi = slice(0, dIdx).find(l => /\$[\d,]+/.test(l.text) && /\d+\s*\/\s*\d+/.test(l.text));
+  if(kpi){
+    const ds = kpi.text.match(/\$[\d,]+(?:\.\d+)?/g) || [];
+    if(ds.length){ kpiValue = num(ds[0]); }
+    if(ds.length >= 3) expenses = num(ds[ds.length-1]);
+  }
+
+  // --- daily breakdown
+  const days = []; let dailyTotal = null;
+  for(const l of slice(dIdx, pIdx)){
+    const m = l.text.match(/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)[a-z]*\s+(\d{1,2})\s+([A-Za-z]{3})[a-z]*\s*(.*)$/);
+    if(m){
+      const off = DAY_NAMES.indexOf(m[1]);
+      const date = isoDate(addDays(monday, off));
+      const rest = m[4];
+      if(/holiday|closed|leave|off/i.test(rest) && !/\$/.test(rest)) days.push({ date, jobs: 0, completed: 0, value: 0, note: clean(rest) });
+      else {
+        const nums = (rest.match(/\$?[\d,]+(?:\.\d+)?%?/g) || []);
+        const ints = nums.filter(n => !/[%$]/.test(n)); const dol = nums.find(n => n.startsWith('$'));
+        days.push({ date, jobs: num(ints[0]), completed: num(ints[1]), value: num(dol), note: '' });
+      }
+    } else if(/^Total/i.test(l.text)){ const dol = l.text.match(/\$[\d,]+(?:\.\d+)?/); if(dol) dailyTotal = num(dol[0]); }
+  }
+  if(!days.length) warnings.push("Couldn't read the daily breakdown table.");
+
+  // --- technicians
+  const mIdx = find(/^Marketing Department/i, pIdx);
+  const techs = []; let techTotalRow = null;
+  for(const l of slice(pIdx, mIdx)){
+    const m = l.text.match(/^([A-Za-z][A-Za-z .'’-]*[A-Za-z])\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+(?:\.\d+)?)%\s+\$([\d,]+(?:\.\d+)?)/);
+    if(!m) continue;
+    const row = { name: m[1], allocated: +m[2], completed: +m[3], unattended: +m[4], reschedCust: +m[5], reschedEmp: +m[6], value: num(m[8]) };
+    if(/^total$/i.test(row.name)) techTotalRow = row; else techs.push(row);
+  }
+  if(!techs.length) warnings.push("Couldn't read the technician table.");
+
+  // --- marketing
+  const cIdx = find(/Mail campaigns scheduled this week/i);
+  const nIdx = find(/Next Week.*Mail campaigns|Next Week Mail/i, cIdx);
+  const rIdx = find(/^Market Research/i);
+  const campaigns = cIdx >= 0 ? parseCampaigns(slice(cIdx+1, nIdx >= 0 ? nIdx : rIdx)) : [];
+  const nextCampaigns = nIdx >= 0 ? parseCampaigns(slice(nIdx+1, rIdx)) : [];
+
+  // --- market research
+  const research = [];
+  const endR = find(/Prepared by|Individual Sales/i, rIdx);
+  if(rIdx >= 0) for(const l of slice(rIdx+1, endR)){
+    const t = l.text;
+    if(/^[●•▪\-]/.test(t)) research.push(clean(t.replace(/^[●•▪\-]\s*/, '')));
+    else if(research.length) research[research.length-1] += ' ' + t;
+    else research.push(t);
+  }
+  const pm = all.match(/Prepared by\s+([^\n]+)/i);
+  const preparedBy = pm ? clean(pm[1]) : '';
+
+  // --- individual sales
+  const sIdx = find(/Individual Sales Target/i), vIdx = find(/ARV Site Visits/i);
+  const sales = { value: 0, target: null, orders: [] };
+  if(sIdx >= 0){
+    const sl = slice(sIdx+1, vIdx);
+    const k = sl.find(l => /\$/.test(l.text));
+    if(k){ const ds = k.text.match(/\$[\d,.]+/g) || []; sales.value = num(ds[0]); const t = num(ds[1]); sales.target = t > 0 ? t : null; }
+    const hi = sl.findIndex(l => /Sales Order No/i.test(l.text));
+    if(hi >= 0){
+      const ti = sl.findIndex((l, i) => i > hi && /^Total/i.test(l.text));
+      const rows = columnize(sl[hi], sl.slice(hi+1, ti < 0 ? undefined : ti));
+      for(const r of rows){ const c = r.cells; if(c.join('').trim()) sales.orders.push({ no: c[0]||'', customer: c[1]||'', notes: c[2]||'', value: num(c[3]) }); }
+    }
+  }
+
+  // --- ARV site visits
+  const visits = { completed: 0, target: 5, log: [] };
+  if(vIdx >= 0){
+    const vl = slice(vIdx+1);
+    const k = vl.find(l => /\d*\s*\/\s*\d+/.test(l.text));
+    if(k){ const m = k.text.match(/(\d*)\s*\/\s*(\d+)/); visits.completed = num(m[1]); visits.target = num(m[2]) || 5; }
+    const hi = vl.findIndex(l => /ARV No/i.test(l.text));
+    if(hi >= 0){
+      const rows = columnize(vl[hi], vl.slice(hi+1).filter(l => !(l.items.length === 1 && /^\d+$/.test(l.text)) && !/^sales$/i.test(l.text)));
+      for(const r of rows){
+        let arv = '', location = '', details = [];
+        r.cols.forEach((c, i) => { const v = r.cells[i]; if(!v) return; if(/^#$/.test(c)) return; if(/ARV/i.test(c)) arv = v; else if(/Location/i.test(c)) location = v; else details.push(v); });
+        if(arv || location || details.length) visits.log.push({ arv, location, details: details.join(' · ') });
+      }
+    }
+  }
+
+  // --- checks
+  const daySum = days.reduce((a, d) => a + d.value, 0);
+  const techSum = techs.reduce((a, t) => a + t.value, 0);
+  if(kpiValue != null && days.length && Math.abs(kpiValue - daySum) > 1) warnings.push(`Headline value ($${kpiValue.toLocaleString()}) doesn't match the daily rows ($${daySum.toLocaleString()}). Using the daily rows.`);
+  if(techTotalRow && Math.abs(techTotalRow.value - techSum) > 1) warnings.push(`The technician "Total" row says $${techTotalRow.value.toLocaleString()}, but the technician rows add up to $${techSum.toLocaleString()}. Using the rows.`);
+  if(techs.length && days.length && Math.abs(techSum - daySum) > 1) warnings.push(`Technician values add up to $${techSum.toLocaleString()} but the daily total is $${daySum.toLocaleString()}.`);
+
+  return {
+    id: iw.year + '-W' + pad2(iw.week), year: iw.year, week: iw.week, reportedWeek,
+    monday: isoDate(monday), target, expenses, kpiValue,
+    days, techs, campaigns, nextCampaigns, research, preparedBy,
+    sales, visits, notes: '', source: fileName || '', warnings
+  };
+}
+// ===== END PARSER =====
+if(typeof module !== 'undefined') module.exports = { parseReport, isoWeek, mondayOfIsoWeek };
+
+</script>
+<script>
+const SEED_WEEKS = [{"id":"2026-W41","year":2026,"week":41,"reportedWeek":41,"monday":"2026-10-05","target":15000,"expenses":185,"kpiValue":7982,"days":[{"date":"2026-10-05","jobs":7,"completed":7,"value":1780,"note":""},{"date":"2026-10-06","jobs":13,"completed":10,"value":1510,"note":""},{"date":"2026-10-07","jobs":5,"completed":4,"value":1202,"note":""},{"date":"2026-10-08","jobs":11,"completed":8,"value":810,"note":""},{"date":"2026-10-09","jobs":10,"completed":8,"value":2680,"note":""}],"techs":[{"name":"Tharaka Herath","allocated":11,"completed":9,"unattended":2,"reschedCust":0,"reschedEmp":0,"value":1060},{"name":"Nimesh Acarsha","allocated":9,"completed":8,"unattended":1,"reschedCust":0,"reschedEmp":0,"value":3180},{"name":"Lakith Perera","allocated":17,"completed":11,"unattended":4,"reschedCust":1,"reschedEmp":1,"value":2852},{"name":"Savindu Rashmina","allocated":9,"completed":9,"unattended":0,"reschedCust":0,"reschedEmp":0,"value":890}],"campaigns":[{"name":"Floor stock is running low on the M2000","sector":"Sales","date":"2026-10-05","status":"Sent"},{"name":"Free vending for your hospital, fully managed","sector":"ARV","date":"2026-10-06","status":"Sent"},{"name":"Moving a vending machine? Leave it to us","sector":"Deliveries","date":"2026-10-07","status":"Sent"},{"name":"Is your machine due for a service?","sector":"Repairs","date":"2026-10-08","status":"Sent"},{"name":"Is your signage as clean as your cars","sector":"ASMG","date":"2026-10-09","status":"Sent"}],"nextCampaigns":[{"name":"","sector":"Sales","date":"2026-10-16","status":"In Progress"},{"name":"","sector":"ARV","date":"2026-10-13","status":"In Progress"},{"name":"","sector":"Deliveries","date":"2026-10-12","status":"In Progress"},{"name":"","sector":"Repairs","date":"2026-10-14","status":"In Progress"},{"name":"","sector":"ASMG","date":"2026-10-15","status":"In Progress"}],"research":["Currently researching the Australian vending machine market to identify potential vending machine operators and businesses.","Searching for new customers and potential business opportunities across Australia.","Using social media and online platforms to identify vending operators, understand their business activities, and collect relevant contact information.","Identifying previous customers who are currently not sending jobs and planning to reconnect with them to generate new opportunities."],"preparedBy":"","sales":{"value":0,"target":8000,"orders":[]},"visits":{"completed":0,"target":5,"log":[]},"notes":"","source":"Technical Sales Report Week 41.pdf","warnings":[]},{"id":"2026-W42","year":2026,"week":42,"reportedWeek":42,"monday":"2026-10-12","target":15000,"expenses":0,"kpiValue":4835,"days":[{"date":"2026-10-12","jobs":15,"completed":11,"value":1400,"note":""},{"date":"2026-10-13","jobs":8,"completed":4,"value":905,"note":""},{"date":"2026-10-14","jobs":5,"completed":3,"value":400,"note":""},{"date":"2026-10-15","jobs":18,"completed":16,"value":1660,"note":""},{"date":"2026-10-16","jobs":6,"completed":3,"value":470,"note":""}],"techs":[{"name":"Tharaka Herath","allocated":20,"completed":14,"unattended":3,"reschedCust":1,"reschedEmp":2,"value":1080},{"name":"Savindu Rashmina","allocated":15,"completed":12,"unattended":0,"reschedCust":3,"reschedEmp":0,"value":1430},{"name":"Nimesh Acarsha","allocated":12,"completed":8,"unattended":3,"reschedCust":1,"reschedEmp":0,"value":1205},{"name":"Lakith Perera","allocated":5,"completed":3,"unattended":2,"reschedCust":0,"reschedEmp":0,"value":1120}],"campaigns":[{"name":"Add frozen to your vending range with the MF3","sector":"Sales","date":"2026-10-16","status":"Sent"},{"name":"Your members want protein after training","sector":"ARV","date":"2026-10-13","status":"Sent"},{"name":"Moving a vending machine? We’ll handle it safely","sector":"Deliveries","date":"2026-10-12","status":"Sent"},{"name":"6 simple ways to extend the life of your vending machine","sector":"Repairs","date":"2026-10-14","status":"Sent"},{"name":"Make your shopfront the scariest on the street","sector":"ASMG","date":"2026-10-15","status":"Sent"}],"nextCampaigns":[{"name":"","sector":"Deliveries","date":"2026-10-21","status":"In Progress"},{"name":"","sector":"ARV","date":"2026-10-22","status":"In Progress"},{"name":"","sector":"Repairs","date":"2026-10-19","status":"In Progress"},{"name":"","sector":"ASMG","date":"2026-10-20","status":"In Progress"},{"name":"","sector":"Sales","date":"2026-10-23","status":"In Progress"}],"research":["Currently researching the Australian vending machine market to identify potential vending machine operators and businesses.","Searching for new customers and potential business opportunities across Australia.","Using social media and online platforms to identify vending operators, understand their business activities, and collect relevant contact information.","Identifying previous customers who are currently not sending jobs and planning to reconnect with them to generate new opportunities."],"preparedBy":"Sachini Abeynayaka","sales":{"value":0,"target":null,"orders":[]},"visits":{"completed":0,"target":5,"log":[]},"notes":"","source":"Technical Sales Report Week 42.pdf","warnings":[]},{"id":"2026-W43","year":2026,"week":43,"reportedWeek":43,"monday":"2026-10-19","target":15000,"expenses":0,"kpiValue":10675,"days":[{"date":"2026-10-19","jobs":10,"completed":10,"value":1295,"note":""},{"date":"2026-10-20","jobs":8,"completed":8,"value":2540,"note":""},{"date":"2026-10-21","jobs":9,"completed":8,"value":1670,"note":""},{"date":"2026-10-22","jobs":15,"completed":11,"value":2530,"note":""},{"date":"2026-10-23","jobs":15,"completed":13,"value":2640,"note":""}],"techs":[{"name":"Ilalio Taulamago","allocated":22,"completed":22,"unattended":0,"reschedCust":0,"reschedEmp":0,"value":4290},{"name":"Nimesh Acarsha","allocated":13,"completed":12,"unattended":0,"reschedCust":1,"reschedEmp":0,"value":3435},{"name":"Tharaka Herath","allocated":10,"completed":7,"unattended":3,"reschedCust":0,"reschedEmp":0,"value":540},{"name":"Savindu Rashmina","allocated":3,"completed":3,"unattended":0,"reschedCust":0,"reschedEmp":0,"value":710},{"name":"Lakith Perera","allocated":9,"completed":6,"unattended":2,"reschedCust":1,"reschedEmp":0,"value":1700}],"campaigns":[{"name":"Moving a vending machine? Do it safely","sector":"Deliveries","date":"2026-10-21","status":"Sent"},{"name":"Your members want protein after training","sector":"ARV","date":"2026-10-22","status":"Sent"},{"name":"Is Your Vending Machine Running Too Hot or Too Cold?","sector":"Repairs","date":"2026-10-19","status":"Sent"},{"name":"Don’t let your shopfront miss Halloween","sector":"ASMG","date":"2026-10-20","status":"Sent"},{"name":"Room for one more?","sector":"Sales","date":"2026-10-23","status":"Sent"}],"nextCampaigns":[],"research":["Currently researching the Australian vending machine market to identify potential vending machine operators and businesses.","Searching for new customers and potential business opportunities across Australia.","Using social media and online platforms to identify vending operators, understand their business activities, and collect relevant contact information.","Identifying previous customers who are currently not sending jobs and planning to reconnect with them to generate new opportunities."],"preparedBy":"Sachini Abeynayaka","sales":{"value":0,"target":null,"orders":[]},"visits":{"completed":0,"target":5,"log":[]},"notes":"","source":"Technical Sales Report Week 43.pdf","warnings":["The technician \"Total\" row says $5,505, but the technician rows add up to $10,675. Using the rows."]},{"id":"2026-W44","year":2026,"week":44,"reportedWeek":43,"monday":"2026-10-26","target":15000,"expenses":0,"kpiValue":8545,"days":[{"date":"2026-10-26","jobs":13,"completed":7,"value":960,"note":""},{"date":"2026-10-27","jobs":18,"completed":15,"value":1680,"note":""},{"date":"2026-10-28","jobs":14,"completed":12,"value":1560,"note":""},{"date":"2026-10-29","jobs":9,"completed":8,"value":1030,"note":""},{"date":"2026-10-30","jobs":13,"completed":9,"value":3315,"note":""}],"techs":[{"name":"Tharaka Herath","allocated":14,"completed":10,"unattended":0,"reschedCust":2,"reschedEmp":2,"value":1540},{"name":"Lakith Perera","allocated":17,"completed":12,"unattended":5,"reschedCust":0,"reschedEmp":0,"value":3275},{"name":"Nimesh Acarsha","allocated":26,"completed":19,"unattended":5,"reschedCust":1,"reschedEmp":1,"value":2580},{"name":"Savindu Rashmina","allocated":10,"completed":10,"unattended":0,"reschedCust":0,"reschedEmp":0,"value":1150}],"campaigns":[{"name":"Better breaks for busy Schools, Unis and TAFE's","sector":"ARV","date":"2026-10-26","status":"Sent"},{"name":"","sector":"Repairs","date":"2026-10-27","status":"Sent"},{"name":"Is Your Vending Machine Running Too Hot or Too Cold?","sector":"ASMG","date":"2026-10-28","status":"Sent"},{"name":"Tricky address? Send it our way.","sector":"Deliveries","date":"2026-10-29","status":"Sent"},{"name":"Something’s moving in the workshop/ Something’s lurking in the break room","sector":"","date":"2026-10-30","status":"Sent"}],"nextCampaigns":[],"research":["Currently researching the Australian vending machine market to identify potential vending machine operators and businesses.","Searching for new customers and potential business opportunities across Australia.","Using social media and online platforms to identify vending operators, understand their business activities, and collect relevant contact information.","Identifying previous customers who are currently not sending jobs and planning to reconnect with them to generate new opportunities."],"preparedBy":"Sachini Abeynayaka","sales":{"value":0,"target":null,"orders":[]},"visits":{"completed":0,"target":5,"log":[]},"notes":"","source":"Technical Sales Report Week 44.pdf","warnings":["The report header says Week 43, but the dates belong to Week 44. Saved as Week 44."]},{"id":"2026-W45","year":2026,"week":45,"reportedWeek":45,"monday":"2026-11-02","target":15000,"expenses":0,"kpiValue":8410,"days":[{"date":"2026-11-02","jobs":13,"completed":13,"value":2685,"note":""},{"date":"2026-11-03","jobs":0,"completed":0,"value":0,"note":"Holiday"},{"date":"2026-11-04","jobs":15,"completed":12,"value":1595,"note":""},{"date":"2026-11-05","jobs":9,"completed":7,"value":1140,"note":""},{"date":"2026-11-06","jobs":14,"completed":10,"value":2990,"note":""}],"techs":[{"name":"Lakith Perera","allocated":19,"completed":16,"unattended":2,"reschedCust":1,"reschedEmp":0,"value":4305},{"name":"Nimesh Acarsha","allocated":10,"completed":8,"unattended":0,"reschedCust":1,"reschedEmp":1,"value":1875},{"name":"Savindu Rashmina","allocated":12,"completed":11,"unattended":0,"reschedCust":1,"reschedEmp":0,"value":1490},{"name":"Tharaka Herath","allocated":10,"completed":7,"unattended":2,"reschedCust":1,"reschedEmp":0,"value":740}],"campaigns":[{"name":"Stairs? Tight corners? We’ve planned for it.","sector":"Deliveries","date":"2026-11-09","status":"Sent"},{"name":"","sector":"Sales","date":"2026-11-10","status":"Sent"},{"name":"","sector":"Repairs","date":"2026-11-11","status":"Sent"},{"name":"","sector":"ASMG","date":"2026-11-12","status":"Sent"},{"name":"","sector":"ARV","date":"2026-11-13","status":"Sent"}],"nextCampaigns":[],"research":["Currently researching the Australian vending machine market to identify potential vending machine operators and businesses.","Searching for new customers and potential business opportunities across Australia.","Using social media and online platforms to identify vending operators, understand their business activities, and collect relevant contact information.","Identifying previous customers who are currently not sending jobs and planning to reconnect with them to generate new opportunities."],"preparedBy":"Sachini Abeynayaka","sales":{"value":0,"target":null,"orders":[]},"visits":{"completed":0,"target":5,"log":[]},"notes":"","source":"Technical Sales Report Week 45.pdf","warnings":[]},{"id":"2026-W46","year":2026,"week":46,"reportedWeek":46,"monday":"2026-11-09","target":15000,"expenses":16,"kpiValue":8497,"days":[{"date":"2026-11-09","jobs":17,"completed":13,"value":2520,"note":""},{"date":"2026-11-10","jobs":10,"completed":8,"value":1170,"note":""},{"date":"2026-11-11","jobs":9,"completed":7,"value":2555,"note":""},{"date":"2026-11-12","jobs":7,"completed":6,"value":1012,"note":""},{"date":"2026-11-13","jobs":16,"completed":12,"value":1240,"note":""}],"techs":[{"name":"Savindu Rashmina","allocated":9,"completed":7,"unattended":0,"reschedCust":2,"reschedEmp":0,"value":1080},{"name":"Nimesh Acarsha","allocated":19,"completed":15,"unattended":3,"reschedCust":1,"reschedEmp":0,"value":3080},{"name":"Tharaka Herath","allocated":27,"completed":21,"unattended":5,"reschedCust":1,"reschedEmp":0,"value":3585},{"name":"Lakith Perera","allocated":4,"completed":3,"unattended":1,"reschedCust":0,"reschedEmp":0,"value":752}],"campaigns":[{"name":"Your machine, now with tap and go","sector":"Repairs","date":"2026-11-16","status":"Sent"},{"name":"","sector":"Sales","date":"2026-11-17","status":"Planned"},{"name":"","sector":"Deliveries","date":"2026-11-18","status":"Planned"},{"name":"","sector":"ASMG","date":"2026-11-19","status":"Planned"},{"name":"","sector":"ARV","date":"2026-11-20","status":"Planned"}],"nextCampaigns":[],"research":["Currently researching the Australian vending machine market to identify potential vending machine operators and businesses.","Searching for new customers and potential business opportunities across Australia.","Using social media and online platforms to identify vending operators, understand their business activities, and collect relevant contact information.","Identifying previous customers who are currently not sending jobs and planning to reconnect with them to generate new opportunities."],"preparedBy":"Sachini Abeynayaka","sales":{"value":0,"target":null,"orders":[]},"visits":{"completed":0,"target":5,"log":[]},"notes":"","source":"Technical Sales Report Week 46.pdf","warnings":[]}];
+</script>
+<script>
+'use strict';
+/* ================= helpers ================= */
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money = (n, dp) => (n < 0 ? '-' : '') + '$' + Math.abs(n || 0).toLocaleString('en-AU', { minimumFractionDigits: dp || 0, maximumFractionDigits: dp || 0 });
+const pct = (n, dp = 1) => (isFinite(n) ? (n * 100).toFixed(dp) : '0') + '%';
+const MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const fmtD = d => d.getDate() + ' ' + MON[d.getMonth()];
+function weekRange(w){ const m = parseISO(w.monday), f = addDays(m, 4); return m.getMonth() === f.getMonth() ? `${m.getDate()}–${f.getDate()} ${MON[f.getMonth()]} ${f.getFullYear()}` : `${fmtD(m)} – ${fmtD(f)} ${f.getFullYear()}`; }
+function weekRangeLong(w){ const m = parseISO(w.monday), f = addDays(m, 4); return `Mon ${fmtD(m)} – Fri ${fmtD(f)} ${f.getFullYear()}`; }
+function toast(msg){ const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2600); }
+function download(name, content, type){ const b = new Blob([content], { type }); const a = document.createElement('a'); a.href = URL.createObjectURL(b); a.download = name; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500); }
+const clone = o => JSON.parse(JSON.stringify(o));
+
+/* ================= data store ================= */
+const LS_KEY = 'arv_weekly_reports_v1', LS_SYNC = 'arv_weekly_sync_key';
+const DEFAULT_SETTINGS = { weeklyTarget: 15000, salesTarget: 8000, visitTarget: 5, name: 'Buwa Wakishta', to: '', cc: '', techOrder: [] };
+let DB = null;
+
+function seedDB(){
+  const weeks = {}; SEED_WEEKS.forEach(w => { const c = clone(w); delete c.warnings; weeks[c.id] = c; });
+  const db = { version: 1, updatedAt: new Date().toISOString(), settings: clone(DEFAULT_SETTINGS), weeks };
+  return db;
+}
+function loadLocal(){
+  try { const raw = localStorage.getItem(LS_KEY); if(raw) return JSON.parse(raw); } catch(e){}
+  return null;
+}
+function normalise(db){
+  db.settings = Object.assign(clone(DEFAULT_SETTINGS), db.settings || {});
+  db.weeks = db.weeks || {};
+  Object.values(db.weeks).forEach(w => registerTechs(w, db));
+  return db;
+}
+function registerTechs(w, db = DB){ (w.techs || []).forEach(t => { const n = (t.name || '').trim(); if(n && !db.settings.techOrder.includes(n)) db.settings.techOrder.push(n); }); }
+function save(opts = {}){
+  DB.updatedAt = new Date().toISOString();
+  try { localStorage.setItem(LS_KEY, JSON.stringify(DB)); } catch(e){ toast('Could not save in this browser: ' + e.message); }
+  if(!opts.skipSync) schedulePush();
+  setSync();
+}
+const weeksSorted = () => Object.values(DB.weeks).sort((a, b) => a.id < b.id ? -1 : 1);
+
+/* ---- cloud sync (optional Netlify function) ---- */
+let syncState = 'local', syncTime = null, pushTimer = null;
+const syncKey = () => { try { return localStorage.getItem(LS_SYNC) || ''; } catch(e){ return ''; } };
+function setSync(){
+  const el = $('#syncStatus');
+  if(syncState === 'ok') el.textContent = '☁ Synced ' + (syncTime ? syncTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '');
+  else if(syncState === 'busy') el.textContent = '☁ Syncing…';
+  else if(syncState === 'err') el.textContent = '⚠ Sync problem – saved in this browser';
+  else el.textContent = 'Saved in this browser';
+}
+async function api(method, body){
+  const r = await fetch('/api/reports', { method, headers: { 'content-type': 'application/json', 'x-sync-key': syncKey() }, body: body ? JSON.stringify(body) : undefined });
+  if(r.status === 401) throw new Error('Wrong passcode');
+  if(r.status === 404) throw new Error('Sync function not found on this site');
+  if(!r.ok) throw new Error('Server error ' + r.status);
+  return r.json();
+}
+async function pull(){
+  if(!syncKey()) return;
+  syncState = 'busy'; setSync();
+  try {
+    const remote = await api('GET');
+    if(remote && remote.weeks && remote.updatedAt && (!DB.updatedAt || remote.updatedAt > DB.updatedAt || DB._fresh)){
+      DB = normalise(remote); localStorage.setItem(LS_KEY, JSON.stringify(DB)); renderAll();
+    } else await push();
+    syncState = 'ok'; syncTime = new Date();
+  } catch(e){ syncState = 'err'; $('#sKeyMsg').textContent = 'Sync: ' + e.message; }
+  setSync();
+}
+async function push(){
+  if(!syncKey()) return;
+  syncState = 'busy'; setSync();
+  try { const body = clone(DB); delete body._fresh; await api('PUT', body); syncState = 'ok'; syncTime = new Date(); }
+  catch(e){ syncState = 'err'; $('#sKeyMsg').textContent = 'Sync: ' + e.message; }
+  setSync();
+}
+function schedulePush(){ if(!syncKey()) return; clearTimeout(pushTimer); pushTimer = setTimeout(push, 600); }
+
+/* ================= calculations ================= */
+function weekStats(w){
+  const days = w.days || [];
+  const value = days.reduce((a, d) => a + (+d.value || 0), 0);
+  const jobs = days.reduce((a, d) => a + (+d.jobs || 0), 0);
+  const completed = days.reduce((a, d) => a + (+d.completed || 0), 0);
+  const target = +w.target || DB.settings.weeklyTarget;
+  return { value, jobs, completed, target, expenses: +w.expenses || 0, rate: jobs ? completed / jobs : 0, pct: target ? value / target : 0 };
+}
+function techRate(t){ const base = (+t.allocated || 0) - (+t.reschedCust || 0); return base > 0 ? (+t.completed || 0) / base : 0; }
+function monthKeyOf(w){ const th = addDays(parseISO(w.monday), 3); return th.getFullYear() + '-' + pad2(th.getMonth() + 1); }
+function monthLabel(k){ const [y, m] = k.split('-'); return MON[+m - 1] + ' ' + y; }
+
+function buildPeriods(view){
+  const ws = weeksSorted();
+  const groups = new Map();
+  for(const w of ws){
+    const key = view === 'month' ? monthKeyOf(w) : w.id;
+    if(!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(w);
+  }
+  return Array.from(groups, ([key, list]) => {
+    const p = { key, weeks: list, value: 0, target: 0, jobs: 0, completed: 0, expenses: 0, techs: {}, campaigns: [], dayVals: [[],[],[],[],[]] };
+    for(const w of list){
+      const s = weekStats(w);
+      p.value += s.value; p.target += s.target; p.jobs += s.jobs; p.completed += s.completed; p.expenses += s.expenses;
+      for(const t of (w.techs || [])){
+        const n = (t.name || '').trim(); if(!n) continue;
+        const o = p.techs[n] || (p.techs[n] = { allocated: 0, completed: 0, unattended: 0, reschedCust: 0, reschedEmp: 0, value: 0 });
+        ['allocated','completed','unattended','reschedCust','reschedEmp','value'].forEach(k => o[k] += (+t[k] || 0));
+      }
+      (w.campaigns || []).forEach(c => p.campaigns.push(Object.assign({ week: w.week }, c)));
+      (w.days || []).forEach(d => { const i = (parseISO(d.date).getDay() + 6) % 7; if(i < 5 && (+d.jobs > 0 || +d.value > 0)) p.dayVals[i].push(+d.value || 0); });
+    }
+    p.rate = p.jobs ? p.completed / p.jobs : 0;
+    p.pct = p.target ? p.value / p.target : 0;
+    if(view === 'month'){ p.label = monthLabel(key); p.sub = list.map(w => 'W' + w.week).join(', '); }
+    else { const w = list[0]; p.label = 'W' + w.week; p.sub = weekRange(w); }
+    return p;
+  });
+}
+
+/* ================= dashboard ================= */
+let VIEW = 'week';
+const RANGES = { week: [['4','Last 4 weeks'],['8','Last 8 weeks'],['13','Last 13 weeks'],['26','Last 26 weeks'],['all','All weeks']],
+                 month: [['3','Last 3 months'],['6','Last 6 months'],['12','Last 12 months'],['all','All months']] };
+let RANGE = { week: '8', month: '6' };
+const charts = {};
+const SERIES = ['#2a78d6','#eb6834','#1baf7a','#eda100','#e87ba4','#008300','#6250d6','#e34948'];
+function techColor(name){ const i = DB.settings.techOrder.indexOf(name); return i >= 0 && i < SERIES.length ? SERIES[i] : '#9aa1ad'; }
+
+if(window.Chart){
+  Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
+  Chart.defaults.font.size = 12;
+  Chart.defaults.color = '#5b6070';
+  Chart.defaults.plugins.legend.display = false;
+  Chart.defaults.plugins.tooltip.backgroundColor = '#16181d';
+  Chart.defaults.plugins.tooltip.padding = 10;
+  Chart.defaults.plugins.tooltip.cornerRadius = 8;
+  Chart.defaults.maintainAspectRatio = false;
+}
+const gridY = { color: '#eceef2', drawTicks: false }, noGrid = { display: false };
+function mkChart(id, cfg){ if(charts[id]) charts[id].destroy(); const el = document.getElementById(id); if(!el || !window.Chart) return; charts[id] = new Chart(el, cfg); }
+const moneyTick = v => '$' + (Math.abs(v) >= 1000 ? (v / 1000).toFixed(v % 1000 ? 1 : 0) + 'k' : v);
+
+function renderDashboard(){
+  const has = Object.keys(DB.weeks).length > 0;
+  $('#dashEmpty').style.display = has ? 'none' : 'block';
+  $('#dashBody').style.display = has ? 'block' : 'none';
+  $$('#viewSeg button').forEach(b => b.classList.toggle('active', b.dataset.v === VIEW));
+  $('#rangeSel').innerHTML = RANGES[VIEW].map(([v, l]) => `<option value="${v}" ${RANGE[VIEW] === v ? 'selected' : ''}>${l}</option>`).join('');
+  if(!has) return;
+  let periods = buildPeriods(VIEW);
+  const r = RANGE[VIEW]; if(r !== 'all') periods = periods.slice(-(+r));
+  const labels = periods.map(p => p.label);
+  const titleCb = items => { const p = periods[items[0].dataIndex]; return p.label + '  ·  ' + p.sub; };
+
+  // tiles
+  const tot = periods.reduce((a, p) => { a.value += p.value; a.target += p.target; a.jobs += p.jobs; a.completed += p.completed; a.expenses += p.expenses; a.n += p.weeks.length; return a; }, { value: 0, target: 0, jobs: 0, completed: 0, expenses: 0, n: 0 });
+  const all = weeksSorted(), last = all[all.length - 1], prev = all[all.length - 2];
+  const ls = weekStats(last), ps = prev ? weekStats(prev) : null;
+  const delta = (a, b, f) => { if(b == null) return ''; const d = a - b; const cls = d > 0 ? 'up' : d < 0 ? 'down' : ''; return `<span class="${cls}">${d > 0 ? '▲' : d < 0 ? '▼' : '•'} ${f(Math.abs(d))}</span>`; };
+  $('#tiles').innerHTML = [
+    [money(tot.value), `Completed value · ${tot.n} week${tot.n === 1 ? '' : 's'}`, `Target ${money(tot.target)}`],
+    [pct(tot.target ? tot.value / tot.target : 0), 'Of target reached', `Average ${money(tot.n ? tot.value / tot.n : 0)} per week`],
+    [`${tot.completed} / ${tot.jobs}`, 'Jobs completed / booked', `Completion rate ${pct(tot.jobs ? tot.completed / tot.jobs : 0, 0)}`],
+    [money(tot.expenses), 'Expenses', ''],
+    [money(ls.value), `Latest: Week ${last.week}`, `${weekRange(last)}<br>${ps ? delta(ls.value, ps.value, money) + ' vs Week ' + prev.week : ''}`],
+  ].map(([v, l, d]) => `<div class="tile"><div class="v">${v}</div><div class="l">${l}</div>${d ? `<div class="d">${d}</div>` : ''}</div>`).join('');
+
+  $('#valSub').textContent = VIEW === 'month' ? 'Monthly target = weekly target × weeks in that month (a week counts in the month its Thursday falls in)' : 'Grey bar = weekly target';
+
+  mkChart('cValue', { type: 'bar', data: { labels, datasets: [
+      { label: 'Target', data: periods.map(p => p.target), backgroundColor: '#d5dbe4', borderRadius: 4, maxBarThickness: 30 },
+      { label: 'Completed value', data: periods.map(p => p.value), backgroundColor: SERIES[0], borderRadius: 4, maxBarThickness: 30 } ] },
+    options: { interaction: { mode: 'index', intersect: false }, scales: { y: { beginAtZero: true, grid: gridY, border: { display: false }, ticks: { callback: moneyTick } }, x: { grid: noGrid } },
+      plugins: { tooltip: { callbacks: { title: titleCb, label: c => ` ${c.dataset.label}: ${money(c.raw)}`, afterBody: it => { const p = periods[it[0].dataIndex]; return `${pct(p.pct)} of target`; } } } } } });
+
+  mkChart('cPct', { type: 'line', data: { labels, datasets: [
+      { label: '% of target', data: periods.map(p => +(p.pct * 100).toFixed(1)), borderColor: SERIES[0], backgroundColor: SERIES[0], borderWidth: 2, pointRadius: 4, pointHoverRadius: 6, pointBorderColor: '#fff', pointBorderWidth: 2, tension: .25 },
+      { label: 'Target', data: periods.map(() => 100), borderColor: '#5b6070', borderDash: [5, 4], borderWidth: 1.5, pointRadius: 0, pointHoverRadius: 0 } ] },
+    options: { interaction: { mode: 'index', intersect: false }, scales: { y: { beginAtZero: true, suggestedMax: 110, grid: gridY, border: { display: false }, ticks: { callback: v => v + '%' } }, x: { grid: noGrid } },
+      plugins: { tooltip: { filter: c => c.datasetIndex === 0, callbacks: { title: titleCb, label: c => ` ${c.raw}% of target` } } } } });
+
+  mkChart('cJobs', { type: 'bar', data: { labels, datasets: [
+      { label: 'Jobs booked', data: periods.map(p => p.jobs), backgroundColor: '#b8c2d1', borderRadius: 4, maxBarThickness: 28 },
+      { label: 'Completed', data: periods.map(p => p.completed), backgroundColor: SERIES[0], borderRadius: 4, maxBarThickness: 28 } ] },
+    options: { interaction: { mode: 'index', intersect: false }, scales: { y: { beginAtZero: true, grid: gridY, border: { display: false } }, x: { grid: noGrid } },
+      plugins: { tooltip: { callbacks: { title: titleCb } } } } });
+
+  mkChart('cRate', { type: 'line', data: { labels, datasets: [
+      { label: 'Completion rate', data: periods.map(p => +(p.rate * 100).toFixed(1)), borderColor: SERIES[2], backgroundColor: SERIES[2], borderWidth: 2, pointRadius: 4, pointHoverRadius: 6, pointBorderColor: '#fff', pointBorderWidth: 2, tension: .25 } ] },
+    options: { interaction: { mode: 'index', intersect: false }, scales: { y: { min: 0, max: 100, grid: gridY, border: { display: false }, ticks: { callback: v => v + '%' } }, x: { grid: noGrid } },
+      plugins: { tooltip: { callbacks: { title: titleCb, label: c => ` ${c.raw}% completed (${periods[c.dataIndex].completed}/${periods[c.dataIndex].jobs})` } } } } });
+
+  // technicians
+  const techNames = DB.settings.techOrder.filter(n => periods.some(p => p.techs[n]));
+  $('#techLegend').innerHTML = techNames.map(n => `<span><i style="background:${techColor(n)}"></i>${esc(n)}</span>`).join('');
+  mkChart('cTech', { type: 'bar', data: { labels, datasets: techNames.map(n => ({ label: n, data: periods.map(p => p.techs[n] ? p.techs[n].value : 0), backgroundColor: techColor(n), borderColor: '#fff', borderWidth: { top: 2 }, borderSkipped: false, maxBarThickness: 48 })) },
+    options: { interaction: { mode: 'index', intersect: false }, scales: { x: { stacked: true, grid: noGrid }, y: { stacked: true, beginAtZero: true, grid: gridY, border: { display: false }, ticks: { callback: moneyTick } } },
+      plugins: { tooltip: { itemSort: (a, b) => b.raw - a.raw, callbacks: { title: titleCb, label: c => ` ${c.dataset.label}: ${money(c.raw)}`, footer: it => 'Total: ' + money(it.reduce((a, c) => a + c.raw, 0)) } } } } });
+
+  const tAgg = {};
+  periods.forEach(p => Object.entries(p.techs).forEach(([n, o]) => { const a = tAgg[n] || (tAgg[n] = { allocated: 0, completed: 0, unattended: 0, reschedCust: 0, reschedEmp: 0, value: 0 }); Object.keys(a).forEach(k => a[k] += o[k]); }));
+  const tRows = Object.entries(tAgg).sort((a, b) => b[1].value - a[1].value);
+  const tv = tRows.reduce((a, [, o]) => a + o.value, 0);
+  $('#techSub').textContent = `${labels[0]} to ${labels[labels.length - 1]} · rate = completed ÷ (allocated − customer reschedules)`;
+  $('#techTable').innerHTML = `<table class="t"><tr><th>Technician</th><th class="n">Allocated</th><th class="n">Done</th><th class="n">Unattended</th><th class="n">Resched. (C/E)</th><th class="n">Rate</th><th class="n">Value</th><th class="n">Share</th></tr>` +
+    tRows.map(([n, o]) => `<tr><td style="white-space:nowrap"><i style="display:inline-block;width:9px;height:9px;border-radius:3px;background:${techColor(n)};margin-right:6px"></i>${esc(n)}</td><td class="n">${o.allocated}</td><td class="n">${o.completed}</td><td class="n">${o.unattended}</td><td class="n">${o.reschedCust} / ${o.reschedEmp}</td><td class="n">${pct(techRate(o), 0)}</td><td class="n">${money(o.value)}</td><td class="n">${pct(tv ? o.value / tv : 0, 0)}</td></tr>`).join('') + `</table>`;
+
+  // weekday
+  const wd = [0,1,2,3,4].map(i => { const v = periods.flatMap(p => p.dayVals[i]); return { avg: v.length ? v.reduce((a, b) => a + b, 0) / v.length : 0, n: v.length }; });
+  mkChart('cWeekday', { type: 'bar', data: { labels: ['Mon','Tue','Wed','Thu','Fri'], datasets: [{ label: 'Average value', data: wd.map(d => Math.round(d.avg)), backgroundColor: SERIES[0], borderRadius: 4, maxBarThickness: 44 }] },
+    options: { scales: { y: { beginAtZero: true, grid: gridY, border: { display: false }, ticks: { callback: moneyTick } }, x: { grid: noGrid } },
+      plugins: { tooltip: { callbacks: { label: c => ` Average ${money(c.raw)} (${wd[c.dataIndex].n} days)` } } } } });
+
+  // campaigns
+  const camps = periods.flatMap(p => p.campaigns);
+  $('#campTable').innerHTML = camps.length ? `<table class="t"><tr><th>Week</th><th>Campaign</th><th>Sector</th><th>Date</th><th>Status</th></tr>` + camps.map(c => `<tr><td>W${c.week}</td><td>${esc(c.name) || '<span class="muted">—</span>'}</td><td>${esc(c.sector)}</td><td>${c.date ? esc(fmtDate(c.date)) : ''}</td><td>${statusPill(c.status)}</td></tr>`).join('') + `</table>` : '<p class="muted">No campaigns in this period.</p>';
+
+  // data table
+  $('#periodTable').innerHTML = `<table class="t"><tr><th>${VIEW === 'month' ? 'Month' : 'Week'}</th><th>${VIEW === 'month' ? 'Weeks' : 'Dates'}</th><th class="n">Value</th><th class="n">Target</th><th class="n">% target</th><th class="n">Jobs</th><th class="n">Done</th><th class="n">Rate</th><th class="n">Expenses</th></tr>` +
+    periods.map(p => `<tr><td>${p.label}</td><td>${p.sub}</td><td class="n">${money(p.value)}</td><td class="n">${money(p.target)}</td><td class="n">${pct(p.pct)}</td><td class="n">${p.jobs}</td><td class="n">${p.completed}</td><td class="n">${pct(p.rate, 0)}</td><td class="n">${money(p.expenses)}</td></tr>`).join('') +
+    `<tr class="total"><td>Total</td><td></td><td class="n">${money(tot.value)}</td><td class="n">${money(tot.target)}</td><td class="n">${pct(tot.target ? tot.value / tot.target : 0)}</td><td class="n">${tot.jobs}</td><td class="n">${tot.completed}</td><td class="n">${pct(tot.jobs ? tot.completed / tot.jobs : 0, 0)}</td><td class="n">${money(tot.expenses)}</td></tr></table>`;
+}
+function fmtDate(s){ if(!/^\d{4}-\d\d-\d\d$/.test(s)) return s; const d = parseISO(s); return `${['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()]} ${fmtD(d)}`; }
+function statusPill(s){ s = s || ''; const c = /sent|done|complete/i.test(s) ? 'sent' : /plan/i.test(s) ? 'planned' : /progress/i.test(s) ? 'progress' : ''; return s ? `<span class="pill ${c}">${esc(s)}</span>` : ''; }
+function pctPill(p){ const c = p >= 1 ? 'good' : p >= .6 ? 'mid' : 'low'; return `<span class="pill ${c}">${pct(p)}</span>`; }
+
+/* ================= weeks list ================= */
+function renderWeeks(){
+  const ws = weeksSorted().reverse();
+  if(!ws.length){ $('#weeksTable').innerHTML = '<div class="empty">No weeks yet.</div>'; return; }
+  $('#weeksTable').innerHTML = `<table class="t"><tr><th>Week</th><th>Dates</th><th class="n">Value</th><th class="n">% target</th><th class="n">Jobs done</th><th class="n">Rate</th><th class="n">Expenses</th><th class="n">Campaigns</th><th class="n">My sales</th><th class="n">Site visits</th><th></th></tr>` +
+    ws.map(w => { const s = weekStats(w); return `<tr><td><b>Week ${w.week}</b> <span class="muted">${w.year}</span></td><td>${weekRange(w)}</td><td class="n">${money(s.value)}</td><td class="n">${pctPill(s.pct)}</td><td class="n">${s.completed} / ${s.jobs}</td><td class="n">${pct(s.rate, 0)}</td><td class="n">${money(s.expenses)}</td><td class="n">${(w.campaigns || []).length}</td><td class="n">${money((w.sales || {}).value || 0)}</td><td class="n">${(w.visits || {}).completed || 0} / ${(w.visits || {}).target || DB.settings.visitTarget}</td>
+      <td style="white-space:nowrap"><button class="btn small ghost" data-edit="${w.id}">Edit</button> <button class="btn small ghost" data-email="${w.id}">Email</button> <button class="btn small danger" data-del="${w.id}">Delete</button></td></tr>`; }).join('') + `</table>`;
+}
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-edit],[data-email],[data-del]'); if(!t) return;
+  if(t.dataset.edit) openEditor(clone(DB.weeks[t.dataset.edit]), { existing: true });
+  if(t.dataset.email){ showTab('email'); $('#emWeek').value = t.dataset.email; onEmailWeekChange(); }
+  if(t.dataset.del){ const w = DB.weeks[t.dataset.del]; if(confirm(`Delete Week ${w.week} (${weekRange(w)})? This can't be undone.`)){ delete DB.weeks[t.dataset.del]; save(); renderAll(); toast('Week deleted'); } }
+});
+
+/* ================= upload ================= */
+if(window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+async function extractItems(file){
+  const doc = await pdfjsLib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+  const items = [];
+  for(let p = 1; p <= doc.numPages; p++){
+    const tc = await (await doc.getPage(p)).getTextContent();
+    tc.items.forEach(it => { if(it.str) items.push({ p, x: it.transform[4], y: it.transform[5], s: it.str }); });
+  }
+  return items;
+}
+const QUEUE = [];
+async function handleFiles(files){
+  for(const f of files){
+    if(!/pdf$/i.test(f.type) && !/\.pdf$/i.test(f.name)){ toast(f.name + ' is not a PDF'); continue; }
+    const q = { name: f.name, status: 'reading', week: null, error: '' };
+    QUEUE.push(q); renderQueue();
+    try {
+      if(!window.pdfjsLib) throw new Error('PDF reader did not load (check your internet connection)');
+      const w = parseReport(await extractItems(f), f.name);
+      if(!w.target) w.target = DB.settings.weeklyTarget;
+      if(!w.sales.target) w.sales.target = DB.settings.salesTarget;
+      q.week = w; q.status = 'ready';
+    } catch(err){ q.status = 'error'; q.error = err.message || String(err); }
+    renderQueue();
+  }
+  const ready = QUEUE.filter(q => q.status === 'ready');
+  if(files.length === 1 && ready.length && ready[ready.length - 1].name === files[0].name) openQueueItem(QUEUE.indexOf(ready[ready.length - 1]));
+}
+function renderQueue(){
+  $('#queue').innerHTML = QUEUE.map((q, i) => {
+    let body = '';
+    if(q.status === 'reading') body = '<span class="muted">Reading…</span>';
+    else if(q.status === 'error') body = `<span class="down">Couldn't read: ${esc(q.error)}</span>`;
+    else if(q.status === 'saved') body = `<span class="up">Saved as Week ${q.week.week}</span>`;
+    else { const s = weekStats(q.week); body = `Week ${q.week.week} · ${weekRange(q.week)} · ${money(s.value)} · ${s.completed}/${s.jobs} jobs` + (q.week.warnings.length ? ` · <span style="color:var(--warn)">${q.week.warnings.length} thing(s) to check</span>` : '') + (DB.weeks[q.week.id] ? ' · <b>already saved – will replace</b>' : ''); }
+    const actions = q.status === 'ready' ? `<button class="btn small" data-qopen="${i}">Check &amp; save</button> <button class="btn small ghost" data-qsave="${i}">Save as is</button>` : '';
+    return `<div class="queue-item"><div class="grow"><b>${esc(q.name)}</b><br>${body}</div>${actions}</div>`;
+  }).join('') + (QUEUE.some(q => q.status === 'ready') && QUEUE.filter(q => q.status === 'ready').length > 1 ? `<div style="margin-top:10px"><button class="btn" id="qSaveAll">Save all ready reports</button></div>` : '');
+}
+function openQueueItem(i){ const q = QUEUE[i]; openEditor(clone(q.week), { onSaved: w => { q.status = 'saved'; q.week = w; renderQueue(); } }); }
+function commitWeek(w, confirmReplace = true){
+  if(DB.weeks[w.id] && confirmReplace && !confirm(`Week ${w.week} is already saved. Replace it with this one?`)) return false;
+  const c = clone(w); delete c.warnings; c.savedAt = new Date().toISOString();
+  DB.weeks[c.id] = c; registerTechs(c); save(); renderAll(); return true;
+}
+$('#queue').addEventListener('click', e => {
+  const o = e.target.closest('[data-qopen]'), s = e.target.closest('[data-qsave]');
+  if(o) openQueueItem(+o.dataset.qopen);
+  if(s){ const q = QUEUE[+s.dataset.qsave]; if(commitWeek(q.week)){ q.status = 'saved'; renderQueue(); toast('Week ' + q.week.week + ' saved'); } }
+  if(e.target.id === 'qSaveAll'){ const r = QUEUE.filter(q => q.status === 'ready'); const dup = r.filter(q => DB.weeks[q.week.id]).length; if(dup && !confirm(`${dup} of these weeks are already saved. Replace them?`)) return; r.forEach(q => { commitWeek(q.week, false); q.status = 'saved'; }); renderQueue(); toast(r.length + ' weeks saved'); }
+});
+const drop = $('#drop');
+drop.addEventListener('click', () => $('#fileIn').click());
+$('#fileIn').addEventListener('change', e => { handleFiles(Array.from(e.target.files)); e.target.value = ''; });
+['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+['dragleave','drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+drop.addEventListener('drop', e => handleFiles(Array.from(e.dataTransfer.files)));
+$('#addManual').addEventListener('click', () => {
+  const ws = weeksSorted(); const last = ws[ws.length - 1];
+  const mon = last ? addDays(parseISO(last.monday), 7) : addDays(new Date(), 1 - (new Date().getDay() || 7));
+  const iw = isoWeek(mon);
+  const w = { id: weekIdFor(mon), year: iw.year, week: iw.week, monday: isoDate(mon), target: DB.settings.weeklyTarget, expenses: 0,
+    days: [0,1,2,3,4].map(i => ({ date: isoDate(addDays(mon, i)), jobs: 0, completed: 0, value: 0, note: '' })),
+    techs: DB.settings.techOrder.slice(0, 6).map(n => ({ name: n, allocated: 0, completed: 0, unattended: 0, reschedCust: 0, reschedEmp: 0, value: 0 })),
+    campaigns: [], nextCampaigns: [], research: last ? clone(last.research || []) : [], preparedBy: last ? last.preparedBy || '' : '',
+    sales: { value: 0, target: DB.settings.salesTarget, orders: [] }, visits: { completed: 0, target: DB.settings.visitTarget, log: [] }, notes: '', source: 'Entered by hand', warnings: [] };
+  openEditor(w, {});
+});
+
+/* ================= editor ================= */
+const COLS = {
+  days: [['date','Date','date'],['jobs','Jobs','number'],['completed','Completed','number'],['value','Value ($)','number'],['note','Note (e.g. Holiday)','text']],
+  techs: [['name','Technician','text'],['allocated','Allocated','number'],['completed','Completed','number'],['unattended','Unattended','number'],['reschedCust','Resched. (Cust.)','number'],['reschedEmp','Resched. (Emp.)','number'],['value','Value ($)','number']],
+  campaigns: [['name','Campaign','text'],['sector','Target sector','text'],['date','Date','date'],['status','Status','text']],
+  orders: [['no','Sales order no.','text'],['customer','Customer','text'],['notes','Notes','text'],['value','Value ($)','number']],
+  log: [['arv','ARV no.','text'],['location','Location','text'],['details','Status / notes','text']]
+};
+let ED = null;
+function edTable(path, cols){
+  const rows = getPath(ED.w, path) || [];
+  return `<table data-path="${path}"><tr>${cols.map(c => `<th>${c[1]}</th>`).join('')}<th></th></tr>` +
+    rows.map((r, i) => `<tr>${cols.map(c => `<td><input type="${c[2]}" data-p="${path}" data-i="${i}" data-k="${c[0]}" value="${esc(r[c[0]] ?? '')}" ${c[2] === 'number' ? 'step="any"' : ''}></td>`).join('')}<td><button class="x" title="Remove row" data-rm="${path}" data-i="${i}">✕</button></td></tr>`).join('') +
+    `</table><button class="btn small ghost" data-add="${path}">+ Add row</button>`;
+}
+function getPath(o, p){ return p.split('.').reduce((a, k) => a ? a[k] : undefined, o); }
+function setPath(o, p, v){ const ks = p.split('.'); const last = ks.pop(); const t = ks.reduce((a, k) => a[k] = a[k] || {}, o); t[last] = v; }
+function openEditor(w, opts){
+  w.sales = w.sales || { value: 0, target: DB.settings.salesTarget, orders: [] };
+  w.visits = w.visits || { completed: 0, target: DB.settings.visitTarget, log: [] };
+  ['days','techs','campaigns','nextCampaigns','research'].forEach(k => w[k] = w[k] || []);
+  ED = { w, opts, origId: opts.existing ? w.id : null };
+  renderEditor(); $('#editor').classList.add('open'); $('#editor').scrollTop = 0;
+}
+function renderEditor(){
+  const w = ED.w;
+  const field = (p, label, type = 'text', extra = '') => `<label class="f">${label}<input type="${type}" data-f="${p}" value="${esc(getPath(w, p) ?? '')}" ${type === 'number' ? 'step="any"' : ''} ${extra}></label>`;
+  $('#edBox').innerHTML = `
+    <div class="row" style="justify-content:space-between"><h2>Week ${w.week} · ${weekRangeLong(w)}</h2><span class="muted" style="font-size:12px">${esc(w.source || '')}</span></div>
+    ${(w.warnings || []).map(x => `<div class="warn">⚠ ${esc(x)}</div>`).join('')}
+    <div class="grid3" style="gap:10px;margin-top:8px">
+      ${field('monday', 'Monday of the week', 'date')}
+      ${field('target', 'Weekly target ($)', 'number')}
+      ${field('expenses', 'Expenses ($)', 'number')}
+    </div>
+    <div class="sec"><h3>Technical – daily breakdown</h3>${edTable('days', COLS.days)}<div class="check" id="edCheckDays"></div></div>
+    <div class="sec"><h3>Technical – performance by technician</h3>${edTable('techs', COLS.techs)}<div class="check" id="edCheckTechs"></div></div>
+    <div class="sec"><h3>Marketing – mail campaigns this week</h3>${edTable('campaigns', COLS.campaigns)}</div>
+    <div class="sec"><h3>Marketing – next week's plan</h3>${edTable('nextCampaigns', COLS.campaigns)}</div>
+    <div class="sec grid2" style="gap:14px">
+      <label class="f">Market research (one point per line)<textarea data-lines="research" rows="5">${esc((w.research || []).join('\n'))}</textarea></label>
+      <div>${field('preparedBy', 'Marketing prepared by')}<div style="height:8px"></div>
+      <label class="f">My comments for this week (shown in the email)<textarea data-f="notes" rows="3">${esc(w.notes || '')}</textarea></label></div>
+    </div>
+    <div class="sec"><h3>Individual sales target</h3>
+      <div class="grid3" style="gap:10px;margin-bottom:8px">${field('sales.value', 'Sales value this week ($)', 'number')}${field('sales.target', 'Weekly individual target ($)', 'number')}<div></div></div>
+      ${edTable('sales.orders', COLS.orders)}</div>
+    <div class="sec"><h3>ARV site visits</h3>
+      <div class="grid3" style="gap:10px;margin-bottom:8px">${field('visits.completed', 'Visits completed', 'number')}${field('visits.target', 'Weekly target', 'number')}<div></div></div>
+      ${edTable('visits.log', COLS.log)}</div>
+    <div class="sec row" style="justify-content:flex-end">
+      <button class="btn ghost" id="edCancel">Cancel</button>
+      <button class="btn" id="edSave">Save week</button>
+    </div>`;
+  edChecks();
+}
+function edChecks(){
+  const w = ED.w; const s = weekStats(w);
+  const tSum = (w.techs || []).reduce((a, t) => a + (+t.value || 0), 0);
+  const tJobs = (w.techs || []).reduce((a, t) => a + (+t.allocated || 0), 0);
+  const tDone = (w.techs || []).reduce((a, t) => a + (+t.completed || 0), 0);
+  const el1 = $('#edCheckDays'), el2 = $('#edCheckTechs'); if(!el1) return;
+  el1.innerHTML = `<b>Total:</b> ${s.jobs} jobs · ${s.completed} completed (${pct(s.rate, 0)}) · ${money(s.value)} = ${pct(s.pct)} of target`;
+  const ok = Math.abs(tSum - s.value) < 1 && tJobs === s.jobs && tDone === s.completed;
+  el2.innerHTML = `<b>Total:</b> ${tJobs} allocated · ${tDone} completed · ${money(tSum)} ` + (ok ? '<span class="up">✓ matches the daily total</span>' : `<span style="color:var(--warn)">⚠ daily total is ${s.jobs} jobs / ${s.completed} done / ${money(s.value)}</span>`);
+}
+$('#edBox').addEventListener('input', e => {
+  const t = e.target; const w = ED.w;
+  if(t.dataset.f){ const v = t.type === 'number' ? (t.value === '' ? 0 : +t.value) : t.value; setPath(w, t.dataset.f, v);
+    if(t.dataset.f === 'monday' && t.value){ const m = parseISO(t.value); const old = w.days.map(d => d.date); w.days.forEach(d => { const i = (parseISO(d.date).getDay() + 6) % 7; d.date = isoDate(addDays(m, i)); }); } }
+  if(t.dataset.p){ const arr = getPath(w, t.dataset.p); arr[+t.dataset.i][t.dataset.k] = t.type === 'number' ? (t.value === '' ? 0 : +t.value) : t.value; }
+  if(t.dataset.lines){ w[t.dataset.lines] = t.value.split('\n').map(s => s.trim()).filter(Boolean); }
+  edChecks();
+});
+$('#edBox').addEventListener('click', e => {
+  const t = e.target; const w = ED.w;
+  if(t.dataset.add){ let arr = getPath(w, t.dataset.add); if(!arr){ arr = []; setPath(w, t.dataset.add, arr); }
+    const blank = {}; const key = t.dataset.add.split('.').pop(); (COLS[key === 'nextCampaigns' ? 'campaigns' : key] || []).forEach(c => blank[c[0]] = c[2] === 'number' ? 0 : '');
+    if(key === 'days'){ const used = arr.map(d => (parseISO(d.date).getDay() + 6) % 7); const free = [0,1,2,3,4].find(i => !used.includes(i)); blank.date = isoDate(addDays(parseISO(w.monday), free ?? 0)); }
+    arr.push(blank); renderEditor(); }
+  if(t.dataset.rm){ getPath(w, t.dataset.rm).splice(+t.dataset.i, 1); renderEditor(); }
+  if(t.id === 'edCancel') closeEditor();
+  if(t.id === 'edSave'){
+    if(!w.monday){ alert('Please set the Monday date.'); return; }
+    const mon = parseISO(w.monday); if(mon.getDay() !== 1){ alert('The week start date must be a Monday.'); return; }
+    const iw = isoWeek(mon); w.year = iw.year; w.week = iw.week; w.id = weekIdFor(mon);
+    w.days.sort((a, b) => a.date < b.date ? -1 : 1);
+    w.techs = w.techs.filter(t => (t.name || '').trim());
+    if(ED.origId){
+      if(ED.origId !== w.id){ if(DB.weeks[w.id] && !confirm(`Week ${w.week} already exists. Replace it?`)) return; delete DB.weeks[ED.origId]; }
+      commitWeek(w, false);
+    } else if(!commitWeek(w, true)) return;
+    if(ED.opts.onSaved) ED.opts.onSaved(w);
+    closeEditor(); toast(`Week ${w.week} saved`);
+  }
+});
+function closeEditor(){ $('#editor').classList.remove('open'); ED = null; }
+$('#editor').addEventListener('mousedown', e => { if(e.target.id === 'editor' && confirm('Close without saving?')) closeEditor(); });
+
+/* ================= email ================= */
+const EM_SECTIONS = [['summary','Headline numbers'],['compare','Compare with previous week'],['highlights','Highlights'],['chart','Trend chart (last 6 weeks)'],['daily','Daily breakdown'],['techs','Technician performance'],['campaigns','Mail campaigns'],['next',"Next week's campaign plan"],['research','Market research'],['sales','Individual sales'],['visits','ARV site visits'],['notes','My comments']];
+let EM = { sections: { summary: true, compare: true, highlights: true, chart: true, daily: true, techs: true, campaigns: true, next: true, research: true, sales: true, visits: true, notes: true }, chartPng: null };
+function prevWeek(w){ const ws = weeksSorted(); const i = ws.findIndex(x => x.id === w.id); return i > 0 ? ws[i - 1] : null; }
+function onEmailWeekChange(){
+  const w = DB.weeks[$('#emWeek').value]; if(!w) return;
+  $('#emSubject').value = `Technical & Sales Weekly Report – Week ${w.week} (${weekRange(w)})`;
+  $('#emIntro').value = `Hi all,\n\nPlease find below the weekly report for Week ${w.week} (${weekRangeLong(w)}).`;
+  if(!$('#emOutro').value) $('#emOutro').value = `Kind regards,\n${DB.settings.name}`;
+  renderEmail();
+}
+function renderEmailControls(){
+  const ws = weeksSorted().reverse(); const cur = $('#emWeek').value;
+  $('#emWeek').innerHTML = ws.map(w => `<option value="${w.id}">Week ${w.week} · ${weekRange(w)}</option>`).join('');
+  if(cur && DB.weeks[cur]) $('#emWeek').value = cur;
+  $('#emChecks').innerHTML = EM_SECTIONS.map(([k, l]) => `<label><input type="checkbox" data-sec="${k}" ${EM.sections[k] ? 'checked' : ''}> ${l}</label>`).join('');
+  if(!$('#emTo').value) $('#emTo').value = DB.settings.to; if(!$('#emCc').value) $('#emCc').value = DB.settings.cc;
+  if(ws.length && !cur) onEmailWeekChange(); else renderEmail();
+}
+$('#emWeek').addEventListener('change', onEmailWeekChange);
+$('#emChecks').addEventListener('change', e => { if(e.target.dataset.sec){ EM.sections[e.target.dataset.sec] = e.target.checked; renderEmail(); } });
+['emIntro','emOutro'].forEach(id => $('#' + id).addEventListener('input', () => renderEmail()));
+
+function trendPng(w){
+  if(!window.Chart) return null;
+  const ws = weeksSorted(); const i = ws.findIndex(x => x.id === w.id); const list = ws.slice(Math.max(0, i - 5), i + 1);
+  const holder = document.createElement('div'); holder.style.cssText = 'position:fixed;left:-9999px;top:0;width:640px;height:260px';
+  const cv = document.createElement('canvas'); cv.width = 640; cv.height = 260; cv.style.width = '640px'; cv.style.height = '260px'; holder.appendChild(cv); document.body.appendChild(holder);
+  const ch = new Chart(cv, { type: 'bar', data: { labels: list.map(x => 'W' + x.week), datasets: [
+      { type: 'line', label: 'Target', data: list.map(x => weekStats(x).target), borderColor: '#5b6070', borderDash: [5, 4], borderWidth: 2, pointRadius: 0, stepped: 'middle' },
+      { label: 'Completed value', data: list.map(x => weekStats(x).value), backgroundColor: list.map(x => x.id === w.id ? '#2a78d6' : '#9fc3ee'), borderRadius: 4, maxBarThickness: 46 } ] },
+    options: { responsive: false, animation: false, devicePixelRatio: 2, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, title: { display: true, text: 'Completed value vs $' + (weekStats(w).target / 1000) + 'k target – last ' + list.length + ' weeks', align: 'start', color: '#16181d', font: { size: 13, weight: '600' } } },
+      scales: { y: { beginAtZero: true, grid: { color: '#eceef2' }, border: { display: false }, ticks: { callback: moneyTick } }, x: { grid: { display: false } } } },
+    plugins: [{ id: 'bg', beforeDraw: c => { const x = c.ctx; x.save(); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.restore(); } },
+              { id: 'lbl', afterDatasetsDraw: c => { const x = c.ctx; const meta = c.getDatasetMeta(1); x.save(); x.font = '600 11px sans-serif'; x.fillStyle = '#16181d'; x.textAlign = 'center'; meta.data.forEach((b, k) => x.fillText(moneyTick(list[k] ? weekStats(list[k]).value : 0), b.x, b.y - 5)); x.restore(); } }] });
+  const url = cv.toDataURL('image/png'); ch.destroy(); holder.remove(); return url;
+}
+
+function buildEmail(w, opts = {}){
+  const S = EM.sections, s = weekStats(w), pw = prevWeek(w), ps = pw ? weekStats(pw) : null;
+  const F = 'font-family:Segoe UI,Arial,Helvetica,sans-serif;';
+  const th = `style="${F}background:#1f3a5f;color:#ffffff;font-size:12px;font-weight:bold;text-align:left;padding:7px 9px;border:1px solid #1f3a5f"`;
+  const thn = th.replace('text-align:left', 'text-align:right');
+  const td = (v, r, b, bg) => `<td style="${F}font-size:13px;padding:6px 9px;border:1px solid #e2e5ea;${r ? 'text-align:right;' : ''}${b ? 'font-weight:bold;' : ''}${bg ? 'background:' + bg + ';' : ''}color:#16181d">${v}</td>`;
+  const h2 = t => `<h2 style="${F}font-size:17px;color:#1f3a5f;margin:26px 0 8px;border-bottom:2px solid #1f3a5f;padding-bottom:4px">${t}</h2>`;
+  const h3 = t => `<h3 style="${F}font-size:14px;color:#16181d;margin:16px 0 6px">${t}</h3>`;
+  const p = (t, extra = '') => `<p style="${F}font-size:14px;color:#16181d;margin:0 0 10px;${extra}">${t}</p>`;
+  const tbl = inner => `<table cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;width:100%;max-width:680px">${inner}</table>`;
+  const nl = t => esc(t).replace(/\n/g, '<br>');
+  let h = `<div style="${F}max-width:700px;color:#16181d">`;
+  if($('#emIntro').value.trim()) h += p(nl($('#emIntro').value));
+  h += `<h1 style="${F}font-size:20px;color:#16181d;margin:16px 0 2px">Sales Report – Week ${w.week}</h1>` + p(weekRangeLong(w), 'color:#5b6070;font-size:13px');
+
+  h += h2('Technical Department');
+  if(S.summary){
+    const cell = (v, l, c) => `<td style="${F}border:1px solid #e2e5ea;padding:10px 6px;text-align:center;width:20%"><div style="font-size:20px;font-weight:bold;color:${c}">${v}</div><div style="font-size:11px;color:#5b6070">${l}</div></td>`;
+    h += tbl(`<tr>${cell(money(s.value), 'Completed value', '#1f3a5f')}${cell(pct(s.pct), 'of ' + money(s.target) + ' target', s.pct >= 1 ? '#1f8a4c' : '#1f8a4c')}${cell(money(Math.max(0, s.target - s.value)), s.value >= s.target ? 'Target reached' : 'Remaining to target', '#c96a00')}${cell(s.completed + ' / ' + s.jobs, 'Jobs completed', '#1f3a5f')}${cell(money(s.expenses), 'Expenses', '#1f3a5f')}</tr>`);
+  }
+  if(S.compare && ps){
+    const ch = (a, b, f, better = 1) => { const d = a - b; const col = d * better > 0 ? '#1f8a4c' : d * better < 0 ? '#c0392b' : '#5b6070'; return `<span style="color:${col};font-weight:bold">${d > 0 ? '▲ +' : d < 0 ? '▼ −' : '• '}${f(Math.abs(d))}</span>`; };
+    h += p(`<b>Compared with Week ${pw.week}:</b> value ${ch(s.value, ps.value, money)} (${money(ps.value)} → ${money(s.value)}) · jobs completed ${ch(s.completed, ps.completed, String)} · completion rate ${ch(s.rate * 100, ps.rate * 100, v => v.toFixed(0) + ' pts')}`, 'margin-top:10px;font-size:13px');
+  }
+  if(S.highlights){
+    const techs = (w.techs || []).slice().sort((a, b) => b.value - a.value);
+    const days = (w.days || []).filter(d => +d.jobs > 0).slice().sort((a, b) => b.value - a.value);
+    const un = (w.techs || []).reduce((a, t) => a + (+t.unattended || 0), 0), rc = (w.techs || []).reduce((a, t) => a + (+t.reschedCust || 0), 0), re = (w.techs || []).reduce((a, t) => a + (+t.reschedEmp || 0), 0);
+    const off = (w.days || []).filter(d => d.note);
+    const items = [];
+    if(techs[0]) items.push(`Top technician: <b>${esc(techs[0].name)}</b> – ${money(techs[0].value)} from ${techs[0].completed} jobs`);
+    if(days[0]) items.push(`Best day: <b>${fmtDate(days[0].date)}</b> – ${money(days[0].value)}`);
+    items.push(`Unattended jobs: <b>${un}</b> · rescheduled by customer: <b>${rc}</b> · by us: <b>${re}</b>`);
+    off.forEach(d => items.push(`${fmtDate(d.date)}: ${esc(d.note)}`));
+    h += h3('Highlights') + `<ul style="${F}font-size:13px;margin:0 0 6px;padding-left:20px">${items.map(i => `<li style="margin:2px 0">${i}</li>`).join('')}</ul>`;
+  }
+  if(S.chart && opts.chartSrc) h += `<div style="margin:12px 0"><img src="${opts.chartSrc}" width="640" style="width:100%;max-width:640px;height:auto;border:1px solid #e2e5ea" alt="Completed value vs target, last 6 weeks"></div>`;
+  if(S.daily){
+    h += h3('Daily breakdown') + tbl(`<tr><th ${th}>Day</th><th ${thn}>Jobs</th><th ${thn}>Completed</th><th ${thn}>Done %</th><th ${thn}>Value</th></tr>` +
+      (w.days || []).map(d => d.note && !+d.jobs ? `<tr>${td(fmtDate(d.date))}<td colspan="4" style="${F}font-size:13px;padding:6px 9px;border:1px solid #e2e5ea;text-align:center;color:#5b6070">${esc(d.note)}</td></tr>` :
+        `<tr>${td(fmtDate(d.date))}${td(d.jobs, 1)}${td(d.completed, 1)}${td(pct(+d.jobs ? d.completed / d.jobs : 0, 0), 1)}${td(money(d.value), 1)}</tr>`).join('') +
+      `<tr>${td('Total (Mon–Fri)', 0, 1, '#eef1f5')}${td(s.jobs, 1, 1, '#eef1f5')}${td(s.completed, 1, 1, '#eef1f5')}${td(pct(s.rate, 0), 1, 1, '#eef1f5')}${td(money(s.value), 1, 1, '#eef1f5')}</tr>`);
+  }
+  if(S.techs && (w.techs || []).length){
+    const T = (w.techs || []).reduce((a, t) => { ['allocated','completed','unattended','reschedCust','reschedEmp','value'].forEach(k => a[k] += (+t[k] || 0)); return a; }, { allocated: 0, completed: 0, unattended: 0, reschedCust: 0, reschedEmp: 0, value: 0 });
+    h += h3('Performance by technician') + tbl(`<tr><th ${th}>Technician</th><th ${thn}>Allocated</th><th ${thn}>Completed</th><th ${thn}>Unattended</th><th ${thn}>Resched. (Cust.)</th><th ${thn}>Resched. (Emp.)</th><th ${thn}>Rate</th><th ${thn}>Value</th><th ${thn}>% of target</th></tr>` +
+      w.techs.map(t => `<tr>${td('<span style="white-space:nowrap">' + esc(t.name) + '</span>')}${td(t.allocated, 1)}${td(t.completed, 1)}${td(t.unattended, 1)}${td(t.reschedCust, 1)}${td(t.reschedEmp, 1)}${td(pct(techRate(t), 0), 1)}${td(money(t.value), 1)}${td(pct(s.target ? t.value / s.target : 0), 1)}</tr>`).join('') +
+      `<tr>${td('Total', 0, 1, '#eef1f5')}${td(T.allocated, 1, 1, '#eef1f5')}${td(T.completed, 1, 1, '#eef1f5')}${td(T.unattended, 1, 1, '#eef1f5')}${td(T.reschedCust, 1, 1, '#eef1f5')}${td(T.reschedEmp, 1, 1, '#eef1f5')}${td(pct(techRate(T), 0), 1, 1, '#eef1f5')}${td(money(T.value), 1, 1, '#eef1f5')}${td(pct(s.target ? T.value / s.target : 0), 1, 1, '#eef1f5')}</tr>`);
+  }
+  const campTbl = list => tbl(`<tr><th ${th}>Campaign</th><th ${th}>Target sector</th><th ${th}>Scheduled date</th><th ${th}>Status</th></tr>` + list.map(c => `<tr>${td(esc(c.name) || '<span style="color:#8a8f9c">—</span>')}${td(esc(c.sector))}${td(c.date ? esc(fmtDate(c.date)) : '')}${td(esc(c.status))}</tr>`).join(''));
+  const mk = (S.campaigns && (w.campaigns || []).length) || (S.next && (w.nextCampaigns || []).length) || (S.research && (w.research || []).length);
+  if(mk){
+    h += h2('Marketing Department');
+    if(S.campaigns && (w.campaigns || []).length) h += h3('Mail campaigns this week') + campTbl(w.campaigns);
+    if(S.next && (w.nextCampaigns || []).length) h += h3("Next week's mail campaign plan") + campTbl(w.nextCampaigns);
+    if(S.research && (w.research || []).length) h += h3('Market research') + `<ul style="${F}font-size:13px;margin:0;padding-left:20px">${w.research.map(r => `<li style="margin:3px 0">${esc(r)}</li>`).join('')}</ul>`;
+    if(w.preparedBy) h += p(`<i>Marketing section prepared by ${esc(w.preparedBy)}</i>`, 'font-size:12px;color:#5b6070;margin-top:8px');
+  }
+  if(S.sales){
+    const sv = +w.sales.value || 0, st = +w.sales.target || DB.settings.salesTarget;
+    h += h2(`Individual Sales Target – ${esc(DB.settings.name)}`);
+    const cell = (v, l, c) => `<td style="${F}border:1px solid #e2e5ea;padding:10px 6px;text-align:center;width:25%"><div style="font-size:18px;font-weight:bold;color:${c}">${v}</div><div style="font-size:11px;color:#5b6070">${l}</div></td>`;
+    h += tbl(`<tr>${cell(money(sv), 'Sales value this week', '#1f3a5f')}${cell(money(st), 'Weekly individual target', '#1f3a5f')}${cell(pct(st ? sv / st : 0), 'of target achieved', '#1f8a4c')}${cell(money(Math.max(0, st - sv)), 'Remaining to target', '#c96a00')}</tr>`);
+    if((w.sales.orders || []).length) h += h3('Sales orders') + tbl(`<tr><th ${th}>Sales order no.</th><th ${th}>Customer</th><th ${th}>Notes</th><th ${thn}>Value</th></tr>` + w.sales.orders.map(o => `<tr>${td(esc(o.no))}${td(esc(o.customer))}${td(esc(o.notes))}${td(money(o.value, 2), 1)}</tr>`).join('') + `<tr>${td('Total', 0, 1, '#eef1f5')}${td('', 0, 0, '#eef1f5')}${td('', 0, 0, '#eef1f5')}${td(money(w.sales.orders.reduce((a, o) => a + (+o.value || 0), 0), 2), 1, 1, '#eef1f5')}</tr>`);
+  }
+  if(S.visits){
+    const vc = +w.visits.completed || 0, vt = +w.visits.target || DB.settings.visitTarget;
+    h += h2('ARV Site Visits') + p(`<b>${vc} / ${vt}</b> site visits completed (${pct(vt ? vc / vt : 0, 0)} of weekly target) · ${Math.max(0, vt - vc)} remaining`);
+    if((w.visits.log || []).length) h += tbl(`<tr><th ${th}>#</th><th ${th}>ARV no.</th><th ${th}>Location</th><th ${th}>Status / notes</th></tr>` + w.visits.log.map((l, i) => `<tr>${td(i + 1)}${td(esc(l.arv))}${td(esc(l.location))}${td(esc(l.details))}</tr>`).join(''));
+  }
+  if(S.notes && (w.notes || '').trim()) h += h2('Comments') + p(nl(w.notes));
+  if($('#emOutro').value.trim()) h += `<div style="margin-top:24px">${p(nl($('#emOutro').value))}</div>`;
+  return h + '</div>';
+}
+function buildPlain(w){
+  const s = weekStats(w), pw = prevWeek(w), ps = pw ? weekStats(pw) : null;
+  let t = $('#emIntro').value.trim() + '\n\n';
+  t += `TECHNICAL – Week ${w.week} (${weekRangeLong(w)})\n`;
+  t += `Completed value: ${money(s.value)} (${pct(s.pct)} of ${money(s.target)} target)\nJobs completed: ${s.completed} / ${s.jobs} (${pct(s.rate, 0)})\nExpenses: ${money(s.expenses)}\n`;
+  if(ps) t += `vs Week ${pw.week}: ${money(ps.value)} → ${money(s.value)}\n`;
+  t += '\nDaily:\n' + (w.days || []).map(d => `  ${fmtDate(d.date)}: ${d.note && !+d.jobs ? d.note : `${d.completed}/${d.jobs} jobs, ${money(d.value)}`}`).join('\n');
+  t += '\n\nTechnicians:\n' + (w.techs || []).map(x => `  ${x.name}: ${x.completed}/${x.allocated} done, ${money(x.value)}`).join('\n');
+  if((w.campaigns || []).length) t += '\n\nMail campaigns:\n' + w.campaigns.map(c => `  ${c.sector || '-'} – ${c.name || '(no title)'} – ${c.date ? fmtDate(c.date) : ''} – ${c.status}`).join('\n');
+  t += `\n\nMy sales: ${money(w.sales.value)} of ${money(w.sales.target || DB.settings.salesTarget)}\nARV site visits: ${w.visits.completed || 0} / ${w.visits.target || DB.settings.visitTarget}`;
+  if((w.notes || '').trim()) t += '\n\nComments:\n' + w.notes;
+  return t + '\n\n' + $('#emOutro').value.trim();
+}
+function renderEmail(){
+  const w = DB.weeks[$('#emWeek').value];
+  if(!w){ $('#emPreview').innerHTML = '<div class="empty">Add a week first.</div>'; return; }
+  if(EM.sections.chart && (!EM.chartPng || EM.chartFor !== w.id + DB.updatedAt)){ EM.chartPng = trendPng(w); EM.chartFor = w.id + DB.updatedAt; }
+  $('#emPreview').innerHTML = buildEmail(w, { chartSrc: EM.sections.chart ? EM.chartPng : null });
+}
+$('#emCopy').addEventListener('click', async () => {
+  const w = DB.weeks[$('#emWeek').value]; if(!w) return;
+  const html = buildEmail(w, { chartSrc: EM.sections.chart ? EM.chartPng : null });
+  try {
+    await navigator.clipboard.write([new ClipboardItem({ 'text/html': new Blob([html], { type: 'text/html' }), 'text/plain': new Blob([buildPlain(w)], { type: 'text/plain' }) })]);
+    toast('Email copied – paste it into a new message');
+  } catch(e){
+    const r = document.createRange(); r.selectNodeContents($('#emPreview')); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+    document.execCommand('copy'); sel.removeAllRanges(); toast('Email copied – paste it into a new message');
+  }
+});
+function b64utf8(str){ const bytes = new TextEncoder().encode(str); let bin = ''; for(let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(bin); }
+const wrap76 = s => s.replace(/.{1,76}/g, '$&\r\n');
+const hdrEnc = s => /^[\x20-\x7e]*$/.test(s) ? s : '=?UTF-8?B?' + b64utf8(s) + '?=';
+$('#emEml').addEventListener('click', () => {
+  const w = DB.weeks[$('#emWeek').value]; if(!w) return;
+  const useChart = EM.sections.chart && EM.chartPng;
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body>${buildEmail(w, { chartSrc: useChart ? 'cid:trendchart' : null })}</body></html>`;
+  const B = 'ARV_' + Date.now().toString(36);
+  let eml = `X-Unsent: 1\r\nTo: ${$('#emTo').value.replace(/;/g, ',')}\r\n` + ($('#emCc').value.trim() ? `Cc: ${$('#emCc').value.replace(/;/g, ',')}\r\n` : '') +
+    `Subject: ${hdrEnc($('#emSubject').value)}\r\nMIME-Version: 1.0\r\nContent-Type: multipart/related; boundary="${B}"\r\n\r\n` +
+    `--${B}\r\nContent-Type: text/html; charset="utf-8"\r\nContent-Transfer-Encoding: base64\r\n\r\n${wrap76(b64utf8(html))}\r\n`;
+  if(useChart) eml += `--${B}\r\nContent-Type: image/png; name="trend.png"\r\nContent-Transfer-Encoding: base64\r\nContent-ID: <trendchart>\r\nContent-Disposition: inline; filename="trend.png"\r\n\r\n${wrap76(EM.chartPng.split(',')[1])}\r\n`;
+  eml += `--${B}--\r\n`;
+  download(`Weekly Report - Week ${w.week}.eml`, eml, 'message/rfc822');
+  toast('Downloaded – open the .eml file to get an Outlook draft');
+});
+$('#emMailto').addEventListener('click', () => {
+  const w = DB.weeks[$('#emWeek').value]; if(!w) return;
+  let body = buildPlain(w); if(body.length > 1800) body = body.slice(0, 1800) + '\n…';
+  location.href = `mailto:${encodeURIComponent($('#emTo').value)}?` + ($('#emCc').value ? `cc=${encodeURIComponent($('#emCc').value)}&` : '') + `subject=${encodeURIComponent($('#emSubject').value)}&body=${encodeURIComponent(body)}`;
+});
+
+/* ================= settings ================= */
+function renderSettings(){
+  const s = DB.settings;
+  $('#sTarget').value = s.weeklyTarget; $('#sSalesTarget').value = s.salesTarget; $('#sVisitTarget').value = s.visitTarget;
+  $('#sName').value = s.name; $('#sTo').value = s.to; $('#sCc').value = s.cc;
+  $('#sKey').value = syncKey();
+  if(!$('#sKeyMsg').textContent) $('#sKeyMsg').textContent = syncKey() ? 'Sync is on.' : 'Sync is off.';
+}
+$('#sSave').addEventListener('click', () => {
+  Object.assign(DB.settings, { weeklyTarget: +$('#sTarget').value || 15000, salesTarget: +$('#sSalesTarget').value || 0, visitTarget: +$('#sVisitTarget').value || 5, name: $('#sName').value.trim(), to: $('#sTo').value.trim(), cc: $('#sCc').value.trim() });
+  save(); toast('Settings saved');
+});
+$('#sKeySave').addEventListener('click', async () => {
+  const k = $('#sKey').value.trim(); if(!k) return;
+  localStorage.setItem(LS_SYNC, k); $('#sKeyMsg').textContent = 'Connecting…';
+  try { await api('GET'); $('#sKeyMsg').textContent = 'Connected. Your data now syncs to the cloud.'; await pull(); }
+  catch(e){ $('#sKeyMsg').textContent = 'Could not connect: ' + e.message; localStorage.removeItem(LS_SYNC); syncState = 'local'; setSync(); }
+});
+$('#sKeyOff').addEventListener('click', () => { localStorage.removeItem(LS_SYNC); $('#sKey').value = ''; syncState = 'local'; setSync(); $('#sKeyMsg').textContent = 'Sync is off. Data stays in this browser.'; });
+$('#exportBtn').addEventListener('click', () => download(`weekly-reports-backup-${isoDate(new Date())}.json`, JSON.stringify(DB, null, 2), 'application/json'));
+$('#importBtn').addEventListener('click', () => $('#importIn').click());
+$('#importIn').addEventListener('change', async e => {
+  const f = e.target.files[0]; e.target.value = ''; if(!f) return;
+  try {
+    const d = JSON.parse(await f.text()); if(!d.weeks) throw new Error('Not a backup file');
+    const n = Object.keys(d.weeks).length;
+    const replace = confirm(`This backup has ${n} weeks.\n\nOK = replace everything with the backup\nCancel = merge (backup weeks are added / overwrite matching weeks)`);
+    if(replace) DB = normalise(d); else { Object.assign(DB.weeks, d.weeks); Object.values(d.weeks).forEach(w => registerTechs(w)); }
+    save(); renderAll(); toast('Backup loaded');
+  } catch(err){ alert('Could not load this file: ' + err.message); }
+});
+$('#exportCsv').addEventListener('click', () => {
+  const rows = [['Week','Year','Monday','Value','Target','% of target','Jobs','Completed','Completion rate','Expenses','Campaigns','My sales','Site visits']];
+  weeksSorted().forEach(w => { const s = weekStats(w); rows.push([w.week, w.year, w.monday, s.value, s.target, (s.pct * 100).toFixed(1), s.jobs, s.completed, (s.rate * 100).toFixed(1), s.expenses, (w.campaigns || []).length, w.sales.value || 0, w.visits.completed || 0]); });
+  rows.push([]); rows.push(['Week','Technician','Allocated','Completed','Unattended','Resched (Cust)','Resched (Emp)','Value']);
+  weeksSorted().forEach(w => (w.techs || []).forEach(t => rows.push([w.week, t.name, t.allocated, t.completed, t.unattended, t.reschedCust, t.reschedEmp, t.value])));
+  download(`weekly-reports-${isoDate(new Date())}.csv`, rows.map(r => r.map(v => /[",\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : v).join(',')).join('\n'), 'text/csv');
+});
+$('#resetBtn').addEventListener('click', () => { if(confirm('Replace all data with the sample weeks 41–46?')){ const keep = DB.settings; DB = normalise(seedDB()); DB.settings = Object.assign(DB.settings, keep); save(); renderAll(); toast('Sample weeks loaded'); } });
+$('#clearBtn').addEventListener('click', () => { if(confirm('Delete ALL weeks? Download a backup first if you might need them.')){ DB.weeks = {}; save(); renderAll(); toast('All weeks deleted'); } });
+
+/* ================= tabs + boot ================= */
+function showTab(name){
+  $$('#nav button').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  $$('.tab').forEach(t => t.classList.toggle('active', t.id === 'tab-' + name));
+  if(name === 'dashboard') renderDashboard();
+  if(name === 'email') renderEmailControls();
+  history.replaceState(null, '', '#' + name);
+}
+$('#nav').addEventListener('click', e => { const b = e.target.closest('button'); if(b) showTab(b.dataset.tab); });
+$('#viewSeg').addEventListener('click', e => { const b = e.target.closest('button'); if(b){ VIEW = b.dataset.v; renderDashboard(); } });
+$('#rangeSel').addEventListener('change', e => { RANGE[VIEW] = e.target.value; renderDashboard(); });
+function renderAll(){
+  renderWeeks(); renderSettings();
+  if($('#tab-dashboard').classList.contains('active')) renderDashboard();
+  if($('#tab-email').classList.contains('active')) renderEmailControls();
+}
+(function boot(){
+  const local = loadLocal();
+  if(local){ DB = normalise(local); }
+  else { DB = normalise(seedDB()); DB._fresh = true; DB.updatedAt = '1970-01-01T00:00:00.000Z'; try { localStorage.setItem(LS_KEY, JSON.stringify(DB)); } catch(e){} }
+  const start = (location.hash || '#dashboard').slice(1);
+  renderAll(); showTab(['dashboard','weeks','upload','email','settings'].includes(start) ? start : 'dashboard');
+  setSync(); pull().then(() => { delete DB._fresh; });
+  if(!window.Chart) toast('Charts could not load – check your internet connection');
+})();
+</script>
+</body>
+</html>
